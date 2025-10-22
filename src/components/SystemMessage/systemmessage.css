@@ -1,0 +1,61 @@
+.system-message {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 300px;
+  max-width: 90%;
+  padding: 16px 20px;
+  border-radius: 10px;
+  color: white;
+  font-size: 16px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background-color: #3498db; /* default info */
+  text-align: center;
+}
+
+.system-message p {
+  margin: 0 0 12px 0;
+}
+
+.system-message-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.system-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+}
+
+.system-btn.action-btn {
+  background-color: white;
+  color: #2c3e50;
+  font-weight: bold;
+}
+
+.system-btn.cancel-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-weight: normal;
+  border: 1px solid white;
+}
+
+/* Color overrides */
+.system-message.success {
+  background-color: #2ecc71;
+}
+
+.system-message.error {
+  background-color: #e74c3c;
+}
+
+.system-message.alert {
+  background-color: #f1c40f;
+  color: black;
+}

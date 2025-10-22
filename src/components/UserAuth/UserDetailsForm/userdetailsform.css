@@ -1,0 +1,323 @@
+.register{
+  background-color: #ffffff84;
+  margin:1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+.register form {
+  color: black;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  max-width: 90%;
+  position: relative;
+  margin-top: 2rem;
+}
+
+.account-info input {
+  background-color: transparent;
+}
+
+.reg-section {
+  padding: 2rem;
+  margin-bottom: 1rem;
+  border: solid rgba(0, 0, 0, 0.082) 1px;
+  background-color: #fffffffc;
+}
+
+.reg-section input {
+  background-color: transparent;
+}
+
+.reg-section h4 {
+  margin-bottom: 1rem;
+
+}
+
+.register form input {
+  font-size: 1.3rem;
+  padding: 0.5rem;
+}
+
+.register form .widthAdjust {
+  width: max-content;
+}
+
+.register form label {
+  font-size: 1.3rem;
+  padding: 0.5rem;
+  color: #31605b;
+  font-weight: 600;
+  background-color: #31605b2f;
+  width: 100%;
+  display: inline-block;
+  margin-top: 0.5rem;
+}
+
+.input-container input:focus {
+  outline: none;
+}
+
+.input-container {
+  /* width: 100%; */
+  margin: 1rem;
+  border-bottom: solid black 1px;
+}
+
+.input-container textarea {
+  width: 100%;
+}
+
+.input-container i {
+  margin-right: 0.5rem;
+}
+
+.input-container i:last-child {
+  justify-content: flex-end;
+  font-size: 1.2rem;
+  color: #31605b;
+  float: right;
+}
+
+.reg-section input:hover {
+  cursor: pointer;
+}
+
+.reg-section select:hover {
+  cursor: pointer;
+}
+
+.btn:hover {
+  cursor: pointer;
+}
+
+.btn-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
+  color: #31605b;
+}
+
+.btn-container button {
+  border: none;
+  background-color: transparent;
+  font-size: 1.2rem;
+  color: #31605b;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: .6s;
+}
+
+.btn-container .sub-btn {
+  font-weight: 300;
+  background-color: #31605b;
+  color: #ffc107;
+  border-radius: 5px;
+  border: none;
+  padding: 0.7rem;
+  min-width: 220px;
+  font-weight: 300;
+}
+
+.margin-top-3 {
+  margin-top: 3rem;
+}
+
+.auth-wrapper button.btn-back{
+  background-color: white;
+}
+
+.btn-back:hover {
+  color: #588984;
+}
+
+.btn-container .sub-btn:hover {
+  background-color: #31605ba6;
+  transform: translateY(-0.3rem);
+}
+
+.btn-container .btn-go {
+  border: solid rgba(0, 0, 0, 0.144) 1px;
+  padding: 1rem 2rem 1rem 1rem;
+  display: flex;
+  align-items: center;
+
+  color: #31605b;
+  border-radius: 0.5rem;
+  margin-top: 5rem;
+}
+
+.btn-container .btn-go span {
+  margin-left: 2rem;
+}
+
+.btn-container .btn-go:hover {
+  background-color: #31605b76;
+  color: white;
+
+}
+
+.consent {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.consent div label {
+  background-color: transparent;
+}
+
+#consent {
+  height: 1.2rem;
+  width: 1.2rem;
+  margin-right: 1rem;
+  display: flex;
+}
+
+#consent:checked {
+  color: black;
+}
+
+.user-verify {
+  font-size: 1.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 1rem 2rem;
+  width: max-content;
+  height: max-content;
+  margin: auto;
+  z-index: 3;
+  background-color: #000000c9;
+  border-radius: 1rem;
+  color: white;
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+}
+
+.user-verify button {
+  color: white;
+}
+
+.modal-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000000c9;
+  z-index: 2;
+}
+
+.user-verify button {
+  color: white;
+  text-decoration: underline;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-size: 1rem;
+
+}
+
+.forgotPassForm {
+  color: black;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  max-width: 45%;
+  position: relative;
+}
+
+.forgotPassForm input {
+  border: none;
+  border-bottom: black 2px solid;
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+  color: rgba(0, 0, 0, 0.842);
+  width: 100%;
+}
+
+.forgotPassForm input:focus {
+  outline: none;
+}
+
+.forgotPassForm button {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-bottom: solid black 1px;
+  background-color: #31605b;
+  color: #ffc107;
+  border-radius: 5px;
+  border: none;
+  padding: 0.7rem;
+  font-weight: 300;
+}
+
+.forgotPassForm button:hover {
+  background-color: #31605ba6;
+  transform: translateY(-0.3rem);
+}
+
+.reg-section .account-login-btn {
+  font-weight: 700;
+  position: relative;
+  padding: 1rem;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 0.5rem;
+  background-color: #31605b1a;
+  margin-top:1rem;
+
+}
+
+.reg-section .account-login-btn:hover {
+  background-color: #31605b3c;
+}
+
+.account-btns{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding:2rem;
+}
+.auth-wrapper .account-btns button{
+  width: 48%;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  border: none;
+  background-color: #31605b3a;
+  color: #31605b;
+  font-weight: 700;
+  cursor: pointer;
+  
+}
+.fields-container .change-email-input-container .confirm{ 
+  display: flex;
+  align-items: center;
+  width:100%;
+}
+.fields-container .change-email-input-container .confirm input{
+  width: fit-content;
+}
+.fields-container .change-email-input-container .confirm label{
+  width: fit-content;
+  background-color: transparent;
+  margin-top: 0;
+  color: #31605b;
+}
+
+.fields-container .change-email-input-container h5{
+  padding:1rem;
+}
+.reg-section-header{
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}

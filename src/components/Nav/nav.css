@@ -1,0 +1,91 @@
+
+.nav-container {
+  display: flex;
+  justify-content: left;
+  width:100%;
+  color: white;
+  background-color: #31605b;
+  box-sizing: border-box;
+  /* position: absolute; */
+}
+
+.nav-container img {
+  height: 10rem;
+  width: 10rem;
+  border-radius: 50%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  background-color: #45726e;
+  border: 3px #20403d solid;
+  margin: 0 1rem;
+}
+
+.nav-container p {
+  margin: 0;
+}
+
+.inner-container{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.inner-container p{
+  text-align: center;
+}
+.inner-container p:first-child{
+  font-size: 3rem;
+  font-weight: 600;
+}
+.inner-container p:nth-child(2){
+  font-size: 1.5rem;
+  font-weight: 400;
+  padding-bottom:1rem;
+  border-bottom: 1px white solid;
+  width: 100%;
+}
+
+.no-user-nav{
+  pointer-events: none;
+  visibility: hidden;
+}
+.nav-body {
+  margin-right:3rem;
+}
+
+.nav-body ul {
+  all: unset;
+  list-style: none;
+  display: flex;
+  justify-content: right;
+  width: 100vw;
+}
+
+.nav-body ul li {
+  padding: 1rem 1.3rem;
+  font-size: 1.5rem;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-body ul li:hover {
+  cursor: pointer;
+  background-color: #60beb4ae;
+  color: rgba(255, 255, 255, 0.722);
+}
+
+.nav-body ul li span {
+  margin-left: 1rem;
+}
+
+.react-icons-nav{
+  font-size: 1.5rem;
+
+
+}

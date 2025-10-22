@@ -1,0 +1,48 @@
+.message {
+  color: white;
+  display: flex;
+  font-size: 1.3rem;
+}
+
+.msg-inner-container img {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  object-fit: cover;
+  position: relative;
+  top: 0.5rem;
+}
+
+.msg-inner-container p {
+  overflow-wrap: anywhere;
+}
+
+.msg-inner-container {
+  display: flex;
+  background-color: #31605b8c;
+  padding: 0.5rem 1.5rem;
+  margin: 0.5rem;
+  border-radius: 0.5rem;
+  max-width: 90%;
+}
+
+.message span {
+  font-size: 0.8rem;
+}
+
+.sent .msg-inner-container {
+  background-color: rgba(0, 0, 0, 0.408);
+
+}
+
+.sent {
+  justify-content: flex-end;
+}
+
+.sent img {
+  margin-right: 1rem;
+}
+
+.sent img {
+  margin-left: 1rem;
+}

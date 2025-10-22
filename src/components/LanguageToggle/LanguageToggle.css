@@ -1,0 +1,48 @@
+
+.language-toggle-container{
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  padding:0;
+  margin: 0; 
+  position: absolute;
+}
+.language-toggle {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid #ccc;
+  width: min-content;
+  margin: 1rem;
+}
+
+.toggle-button {
+  padding: 6px 12px;
+  border: none;
+  background-color: #f0f0f05d;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.toggle-button:first-child {
+  border-right: 1px solid #ccc;
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+  margin: 0;
+}
+
+.toggle-button:last-child {
+  border-left: 1px solid #ccc;
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+  margin: 0;
+}
+
+.toggle-button.active {
+  background-color: #007bff;
+  color: white;
+}

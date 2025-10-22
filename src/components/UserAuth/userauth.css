@@ -1,0 +1,107 @@
+select {
+  all: unset;
+  padding: 0.5rem;
+}
+
+textarea {
+  all: unset;
+}
+
+h3,
+h5 {
+  margin: 0.3rem;
+}
+
+.auth-wrapper button {
+  border: none;
+  background-color: transparent;
+  font-size: 1rem;
+  color: #31605b;
+}
+
+.callout-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.auth-callout {
+  margin: 3rem;
+  box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+  border-radius: 0.5rem;
+  transition: all .2s ease-in-out;
+}
+
+.auth-callout:hover {
+  transform: scale(1.1);
+  cursor: pointer;
+}
+
+.fields-container {
+  /* width: 100%; */
+}
+
+.fields-container .login {
+  color: black;
+  background-color: #ffffff;
+  padding: 3rem 8rem;
+  min-width: 35rem;
+  border-radius: 0.5rem;
+  border: 1rem solid #064d4556;
+  margin-top:2rem;
+}
+.fields-container .login h1{
+  font-size: 1.5rem;
+  color: rgba(0, 0, 0, 0.564);
+
+
+}
+
+.fields-container .login input {
+  padding: 1rem;
+  background-color: transparent;
+}
+
+.fields-container .login input::placeholder {
+  color: rgba(0, 0, 0, 0.442);
+}
+
+
+.fields-container form label {
+  font-size: 1rem;
+  color: rgba(0, 0, 0, 0.442);
+  padding: 0.5rem;
+}
+
+.fields-container form input {
+  width: 90%;
+  border: none;
+  font-size: 1.3rem;
+  color: rgba(0, 0, 0, 0.842);
+}
+
+.fields-container form [type=date] {
+  width: unset;
+}
+
+.fields-container form [type=number] {
+  width: unset;
+}
+.input-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.forgotPassForm {
+  background-color: white;
+  margin: 5% auto;
+  padding: 3rem 8rem;
+  border: 1rem solid #064d4556;
+} 
+.forgotPassForm button{
+  width: 70%;
+  background-color: #31605b;
+  color: white;
+}

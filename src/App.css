@@ -1,0 +1,9 @@
+.verify-email{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: #f9f9f937;
+  padding: 2rem 5rem;
+}

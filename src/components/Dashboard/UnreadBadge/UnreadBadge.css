@@ -1,0 +1,33 @@
+.unread-badge {
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+  display: inline-block;
+  margin: .3rem;;
+}
+
+.wrapper-for-unread {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unread-badge-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.unread-badge {
+  width: 10px;
+  height: 10px;
+  background-color: red;
+  border-radius: 50%;
+}
+
+.unread-label {
+  font-size: 0.85rem;
+  color: red;
+  margin: 0;
+}

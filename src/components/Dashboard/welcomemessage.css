@@ -1,0 +1,315 @@
+.welcome-message-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.767);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem; /* Ensures padding on smaller screens */
+}
+
+.welcome-message {
+  padding: 2rem;
+  border-radius: 10px; /* Slightly more rounded for modern look */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background-color: #5bcabf;
+  border: 5px rgba(0, 0, 0, 0.571) solid;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* width: 90%;  */
+  max-width: 600px; 
+  overflow: auto;
+}
+
+/* Responsive Styling for Smaller Screens */
+@media (max-width: 768px) {
+  .welcome-message {
+    padding: 1.5rem; /* Reduce padding */
+    font-size: 0.9rem; /* Slightly smaller text */
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-message {
+    padding: 1rem;
+    font-size: 0.85rem;
+    max-width: 90%; /* Takes more space on very small screens */
+  }
+}
+
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  position: relative;
+  width: 100%;
+}
+.header-text{
+  width: 100%;
+}
+
+.welcome-close {
+  margin-left: auto;
+  background-color: #3d7771;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  position: absolute;
+  top: -1rem;
+  right: 0;
+}
+
+.image-container {
+  margin: 0rem 3rem;
+}
+.image-container img {
+  border: 3px #20403d solid;
+  background-color: #45726e;
+  border-radius: 50%;
+  height: 8rem;
+  width: 8rem;
+}
+
+.welcome-message h2 {
+  margin: 0;
+  color: #333;
+}
+
+.welcome-message p {
+  margin: 1rem 0 0;
+  color: #2f2f2f;
+}
+
+.profile-image {
+  height: 5rem;
+  width: 5rem;
+  object-fit: cover;
+  border-radius: 15%;
+}
+
+
+.match-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  color: rgba(0, 0, 0, 0.65);
+}
+
+
+.distress-thermometer-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  background-color: rgb(255, 255, 255);
+  border-radius: 2rem;
+  border: #3d7771 10px solid;
+  position: absolute;
+  left: 20%;
+  width: 60%;
+  height: 80%;
+}
+
+.distress-thermometer-wrapper .header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.distress-thermometer-wrapper h2 {
+  margin: 1rem 0 0 0 ;
+  color: #333;
+}
+.distress-thermometer-wrapper p {
+  margin: 1rem 0 0;
+  color: #504f4f;
+  width: 80%;
+  text-align: center;
+}
+
+.thermometer-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background-color: rgb(255, 255, 255);
+  border-radius: 2rem;
+}
+
+
+.descriptions {
+  height: 90%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  width: max-content;
+
+}
+
+.description {
+  padding: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  border-radius: 10px;
+}
+
+.description.active {
+  /* font-weight: bold; */
+  transform: scale(1.05);
+}
+
+.description:hover {
+  transform: scale(1.1);
+}
+
+.side-instructions {
+  display: flex;
+  background-color: #ffffff43;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin: 1rem;
+}
+
+.side-instructions p {
+  margin: 0 1rem;
+  width: 49%;
+  /* border: #00FF00 1px solid; */
+}
+
+.thermometer {
+  position: relative;
+  height: 85%;
+  width: 80px;
+  background: linear-gradient(to top,
+      #00FF00 0%,
+      #ADFF2F 20%,
+      #FFFF00 40%,
+      #FFA500 60%,
+      #FF4500 80%,
+      #FF0000 100%);
+  border-radius: 10px;
+  margin-left: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-top-left-radius: 100% 20%;
+  border-top-right-radius: 100% 20%;
+}
+
+.thermometer-base {
+  position: relative;
+  top: 98.8%;
+  right: 45%;
+  height: 50px;
+  width: 150px;
+  background-color: #00FF00;
+  border-radius: 100px 100px 0 0;
+}
+
+.tick-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 83%;
+  width: 10%;
+  position: relative;
+  left: 3rem;
+  z-index: 2;
+}
+
+.tick-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  left: 0;
+  width: 100%;
+
+}
+
+
+.tick {
+  width: 30%;
+  height: 10px;
+
+  background-color: white;
+
+  transition: transform 0.3s ease;
+}
+
+
+.tick.active {
+  transform: translateX(5px);
+  height: 15px;
+}
+
+
+.tick-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: black;
+  margin-left: 5px;
+}
+
+
+
+.description:hover~.thermometer .tick {
+  transform: translateX(-10px);
+}
+
+
+.description:nth-child(1) {
+  background-color: #FF0000;
+}
+
+.description:nth-child(2) {
+  background-color: #FF4500;
+}
+
+.description:nth-child(3) {
+  background-color: #ff7700;
+}
+
+.description:nth-child(4) {
+  background-color: #ffae00;
+}
+
+.description:nth-child(5) {
+  background-color: #ffcc00;
+}
+
+.description:nth-child(6) {
+  background-color: #ffea00;
+}
+
+.description:nth-child(7) {
+  background-color: #f2ff00;
+}
+
+.description:nth-child(8) {
+  background-color: #ddff00;
+}
+
+.description:nth-child(9) {
+  background-color: #a6ff00;
+}
+
+.description:nth-child(10) {
+  background-color: #73ff00;
+}
+
+.description:nth-child(11) {
+  background-color: #00FF00;
+}

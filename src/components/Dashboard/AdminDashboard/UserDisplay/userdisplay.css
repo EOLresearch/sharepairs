@@ -1,0 +1,211 @@
+/* ⬇️ Overall container for the display */
+.user-display-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ⬇️ Header section above the filters */
+.user-display-header {
+  display: flex;
+  background-color: #00000078;
+  padding: 0.5rem 1rem;
+  /* width: 100%; */
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0;
+  border-radius: 40px 40px 0 0;
+
+}
+
+.user-display-header button {
+  padding: 0.5rem 1rem;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  background-color: #46837661;
+  color: white;
+  border-radius: 0.5rem;
+  margin: 0.5rem;
+}
+
+/* ⬇️ Filter buttons: Kinship, Natural, Unnatural, All */
+.user-display-cause-selections {
+  display: flex;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+/* ⬇️ Filter section for kinship */
+.kinship-selections {
+  /* margin: 0.5rem; */
+  padding: 2rem;
+  background-color: #00000078;
+  margin-top: 0;
+  border-radius: 100px 100px 0 0;
+}
+
+/* ⬇️ Container that holds kinship + cause filter labels */
+.filter-labels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
+  border-radius: 1rem;
+}
+
+.filter-labels span {
+  color: rgb(128, 128, 128);
+  font-size: 0.8rem;
+}
+
+.filter-labels-container {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-around;
+}
+
+.filter-labels-container span {
+  font-size: 1.2rem;
+  color: rgb(255, 255, 255);
+  border-radius: 0.5rem;
+}
+
+.filter-labels-container span span {
+  color: rgb(255, 255, 255);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+.filter-labels-container button{
+  margin: 0;
+  position: relative;
+  bottom: 1rem;
+}
+
+/* ⬇️ Group container for kinship filter buttons */
+.double-btn-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  /* 5 columns */
+  gap: 1rem;
+  padding: 0.5rem;
+  border-radius: 1rem;
+  margin: 0 auto;
+  width: fit-content;
+  transition: all 0.3s ease-in-out;
+  /* background-color: #00000078; */
+}
+
+.user-display-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  margin: 0;
+  /* padding: 1rem; */
+}
+
+.user-card-filter-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  background-color: #00000078;
+  padding: 2rem 1rem;
+  /* border-radius: 1rem; */
+}
+
+/* ⬇️ Individual kinship filter button pair */
+
+.double-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0.5rem;
+  border: none;
+  font-size: 1rem;
+  background-color: #ebebeb;
+  border-radius: 0.5rem;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.double-btn span {
+  padding: 0.5rem;
+  position: relative;
+  width: fit-content;
+}
+
+.double-btn span:hover {
+  background-color: #aaaaaa54;
+  /* color: white; */
+  border-radius: 0.5rem;
+}
+
+/* ⬇️ Container for N / U mini-buttons */
+.sub-btn-container {
+  display: flex;
+  justify-content: center;
+  width: min-content;
+  /* background-color: #000000; */
+}
+
+.sub-btn-container button {
+  padding: 0.5rem 1rem;
+  margin: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  /* background-color: #ebebeb; */
+  color: white;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease-in-out;
+}
+
+
+.double-btn button:hover {
+  background-color: #aaaaaa54;
+  color: white;
+}
+
+.toggle-switch {
+  width: 30px;
+  height: 10px;
+  background-color: #ccc;
+  border-radius: 30px;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  outline: none;
+  position: relative;
+  left: 1rem;
+}
+
+.toggle-switch.on {
+  background-color: #4caf50; 
+  justify-content: flex-start;
+}
+
+.toggle-switch.off {
+  background-color: #f44336;
+  justify-content: flex-end;
+}
+
+.toggle-knob {
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s ease;
+}

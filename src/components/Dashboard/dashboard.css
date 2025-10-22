@@ -1,0 +1,31 @@
+.clicked {
+  background-color: #458881;
+}
+
+.dashboard-container {
+  /* border: 2px black solid; */
+/* width: 99vw; */
+}
+
+
+.irb .close-btn{
+  position: absolute;
+  top: -2rem;
+  right: -1rem;
+  background-color: #3d7771;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.irb {
+  width: 60%;
+}
+
+.irb .header h3 {
+  margin: 0 auto;
+}
