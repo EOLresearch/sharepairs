@@ -38,6 +38,15 @@ src/assets
 src/fb.js
 src/admins.js
 
-#migration guides
+#migration guides and planning docs
 *_GUIDE.md
+*GUIDE*.md
 MIGRATION_OVERVIEW.md
+ARCHITECTURE_SIMPLIFIED.md
+DYNAMODB_VS_RDS.md
+*_VS_*.md
+
+#terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
