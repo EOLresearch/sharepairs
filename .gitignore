@@ -48,5 +48,25 @@ DYNAMODB_VS_RDS.md
 
 #terraform
 .terraform/
-*.tfstate
+**/*.tfstate
+**/*.tfstate.*
 *.tfstate.backup
+
+#firebase cache
+.firebase/
+
+#IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+#AWS credentials (if accidentally created)
+.aws/
+*.pem
+*.key
+
+#Logs
+*.log
+logs/
