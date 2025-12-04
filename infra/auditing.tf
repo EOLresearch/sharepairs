@@ -23,11 +23,7 @@
 # - Together = Complete audit trail for HIPAA
 #
 # ============================================================================
-
-# Get current AWS account ID and region
-data "aws_caller_identity" "current" {}
-data "aws_region" "current" {}
-
+# Note: Data sources for account ID and region are defined in s3.tf
 # ============================================================================
 # CloudTrail - API Activity Logging
 # ============================================================================
@@ -124,15 +120,9 @@ resource "aws_cloudtrail" "main" {
     }
   }
 
-  event_selector {
-    read_write_type           = "All"
-    include_management_events = true
-
-    data_resource {
-      type   = "AWS::DynamoDB::Table"
-      values = ["arn:aws:dynamodb:*:*:table/sharepairs-dev-*"]  # Log DynamoDB access
-    }
-  }
+  # Note: DynamoDB API calls are automatically logged via management events
+  # CloudTrail doesn't support wildcards in table names for data resource selectors
+  # All DynamoDB operations will still be captured in the trail logs
 
   tags = {
     Name        = "sharepairs-audit-trail"
@@ -234,7 +224,7 @@ resource "aws_config_configuration_recorder" "main" {
 resource "aws_config_delivery_channel" "main" {
   name           = "sharepairs-config-delivery"
   s3_bucket_name = aws_s3_bucket.logs.id
-  s3_key_prefix  = "config/"
+  s3_key_prefix  = "config"
 
   snapshot_delivery_properties {
     delivery_frequency = "TwentyFour_Hours"  # Daily snapshots

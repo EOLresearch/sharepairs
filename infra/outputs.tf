@@ -55,3 +55,51 @@ output "config_recorder_name" {
   value       = aws_config_configuration_recorder.main.name
 }
 
+# ============================================================================
+# CloudFront Outputs
+# ============================================================================
+
+output "cloudfront_distribution_id" {
+  description = "CloudFront distribution ID"
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
+output "cloudfront_domain_name" {
+  description = "CloudFront distribution domain name (use this URL to access your app)"
+  value       = aws_cloudfront_distribution.frontend.domain_name
+}
+
+output "cloudfront_arn" {
+  description = "CloudFront distribution ARN"
+  value       = aws_cloudfront_distribution.frontend.arn
+}
+
+output "frontend_bucket_name" {
+  description = "Name of the S3 bucket for frontend static site"
+  value       = aws_s3_bucket.frontend.id
+}
+
+# ============================================================================
+# API Gateway Outputs
+# ============================================================================
+
+output "api_gateway_id" {
+  description = "API Gateway REST API ID"
+  value       = aws_apigatewayv2_api.main.id
+}
+
+output "api_gateway_endpoint" {
+  description = "API Gateway endpoint URL (use this to call your APIs)"
+  value       = aws_apigatewayv2_api.main.api_endpoint
+}
+
+output "api_gateway_arn" {
+  description = "API Gateway REST API ARN"
+  value       = aws_apigatewayv2_api.main.arn
+}
+
+output "api_gateway_execution_arn" {
+  description = "API Gateway execution ARN (use this for Lambda permissions)"
+  value       = aws_apigatewayv2_api.main.execution_arn
+}
+
