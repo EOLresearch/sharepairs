@@ -13,6 +13,45 @@ output "cognito_authenticated_role_arn" {
 }
 
 # ============================================================================
+# Cognito Outputs
+# ============================================================================
+
+output "cognito_user_pool_id" {
+  description = "Cognito User Pool ID (use this in your frontend/backend config)"
+  value       = aws_cognito_user_pool.main.id
+}
+
+output "cognito_user_pool_arn" {
+  description = "Cognito User Pool ARN"
+  value       = aws_cognito_user_pool.main.arn
+}
+
+output "cognito_user_pool_endpoint" {
+  description = "Cognito User Pool endpoint URL"
+  value       = aws_cognito_user_pool.main.endpoint
+}
+
+output "cognito_user_pool_client_id" {
+  description = "Cognito User Pool Client ID (use this in your frontend/backend config)"
+  value       = aws_cognito_user_pool_client.main.id
+}
+
+output "cognito_user_pool_domain" {
+  description = "Cognito User Pool Domain (for hosted UI)"
+  value       = aws_cognito_user_pool_domain.main.domain
+}
+
+output "cognito_user_pool_domain_url" {
+  description = "Cognito User Pool Domain URL (for hosted UI authentication)"
+  value       = "https://${aws_cognito_user_pool_domain.main.domain}.auth.${data.aws_region.current.name}.amazoncognito.com"
+}
+
+output "cognito_identity_pool_id" {
+  description = "Cognito Identity Pool ID (use this in your frontend config for AWS resource access)"
+  value       = aws_cognito_identity_pool.main.id
+}
+
+# ============================================================================
 # S3 Outputs
 # ============================================================================
 
