@@ -140,6 +140,8 @@ resource "aws_iam_role" "cognito_authenticated" {
   name = "sharepairs-cognito-authenticated-role"
 
   # This policy says "Cognito Identity service can assume this role for authenticated users"
+  # Note: We reference the identity pool ID here, which creates a dependency.
+  # Terraform will handle the creation order correctly.
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -151,7 +153,7 @@ resource "aws_iam_role" "cognito_authenticated" {
         }
         Condition = {
           StringEquals = {
-            "cognito-identity.amazonaws.com:aud" = "PLACEHOLDER_IDENTITY_POOL_ID"  # Will update when Cognito is created
+            "cognito-identity.amazonaws.com:aud" = aws_cognito_identity_pool.main.id
           }
           "ForAnyValue:StringLike" = {
             "cognito-identity.amazonaws.com:amr" = "authenticated"
