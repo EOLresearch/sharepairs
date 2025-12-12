@@ -1,0 +1,942 @@
+openapi: 3.0.3
+info:
+  title: Share Pairs API
+  description: |
+    REST API for Share Pairs - A peer support chat application for people who have experienced similar losses.
+    
+    This API is HIPAA-compliant and requires TLS/HTTPS for all requests.
+    
+    **Authentication:** All endpoints (except auth endpoints) require a valid Cognito JWT token in the Authorization header.
+    
+    **Base URL:** `https://{api-id}.execute-api.us-east-1.amazonaws.com/prod`
+  version: 1.0.0
+  contact:
+    name: Share Pairs Support
+    email: support@sharepairs.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://{api-id}.execute-api.us-east-1.amazonaws.com/prod
+    description: Production API Gateway endpoint
+    variables:
+      api-id:
+        default: auabznv3q9
+        description: API Gateway ID (from Terraform output)
+
+tags:
+  - name: Authentication
+    description: User authentication and account management
+  - name: Users
+    description: User profile and match management
+  - name: Conversations
+    description: Chat conversations and messages
+  - name: Admin
+    description: Administrative functions (admin only)
+
+paths:
+  # ============================================================================
+  # Authentication Endpoints
+  # ============================================================================
+  
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Creates a new user account in Cognito and the database
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              example:
+                value:
+                  email: user@example.com
+                  password: SecurePass123!
+                  displayName: John Doe
+                  preferredLanguage: en
+                  timezone: America/New_York
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user
+      description: Logs in a user and returns Cognito tokens
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Refreshes the access token using a refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: Cognito refresh token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Sends a password reset code to the user's email
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Password reset code sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset code sent to email
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password with code
+      description: Resets password using the code sent via email
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - code
+                - newPassword
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  description: Password reset code from email
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password reset successful
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # ============================================================================
+  # User Endpoints
+  # ============================================================================
+  
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Returns the authenticated user's profile
+      operationId: getCurrentUser
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Users
+      summary: Update current user profile
+      description: Updates the authenticated user's profile
+      operationId: updateCurrentUser
+      security:
+        - CognitoAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/{userId}:
+    get:
+      tags:
+        - Users
+      summary: Get user by ID
+      description: Returns a user's public profile information
+      operationId: getUserById
+      security:
+        - CognitoAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublic'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /users/matches:
+    get:
+      tags:
+        - Users
+      summary: Get matched users
+      description: Returns list of users matched with the current user
+      operationId: getMatches
+      security:
+        - CognitoAuth: []
+      responses:
+        '200':
+          description: List of matched users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UserPublic'
+
+  # ============================================================================
+  # Conversation Endpoints
+  # ============================================================================
+  
+  /conversations:
+    get:
+      tags:
+        - Conversations
+      summary: List user's conversations
+      description: Returns all conversations for the authenticated user
+      operationId: getConversations
+      security:
+        - CognitoAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            description: Pagination cursor
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conversation'
+                  cursor:
+                    type: string
+                    nullable: true
+                    description: Pagination cursor for next page
+
+    post:
+      tags:
+        - Conversations
+      summary: Create new conversation
+      description: Creates a new conversation/match with another user (admin function)
+      operationId: createConversation
+      security:
+        - CognitoAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId1
+                - userId2
+              properties:
+                userId1:
+                  type: string
+                  format: uuid
+                userId2:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /conversations/{conversationId}:
+    get:
+      tags:
+        - Conversations
+      summary: Get conversation details
+      description: Returns details of a specific conversation
+      operationId: getConversation
+      security:
+        - CognitoAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      responses:
+        '200':
+          description: Conversation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /conversations/{conversationId}/messages:
+    get:
+      tags:
+        - Conversations
+      summary: Get conversation messages
+      description: Returns messages for a conversation with pagination
+      operationId: getMessages
+      security:
+        - CognitoAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            description: Pagination cursor
+        - name: before
+          in: query
+          schema:
+            type: string
+            format: date-time
+            description: Get messages before this timestamp
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  cursor:
+                    type: string
+                    nullable: true
+
+    post:
+      tags:
+        - Conversations
+      summary: Send a message
+      description: Sends a new message in a conversation
+      operationId: sendMessage
+      security:
+        - CognitoAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ConversationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+      responses:
+        '201':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Conversation not found
+
+  # ============================================================================
+  # Admin Endpoints
+  # ============================================================================
+  
+  /admin/users:
+    get:
+      tags:
+        - Admin
+      summary: List all users (admin only)
+      description: Returns all users in the system with pagination
+      operationId: adminGetUsers
+      security:
+        - CognitoAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+            description: Search by email or display name
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  cursor:
+                    type: string
+                    nullable: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/users/{userId}:
+    get:
+      tags:
+        - Admin
+      summary: Get user details (admin only)
+      description: Returns detailed user information including admin fields
+      operationId: adminGetUser
+      security:
+        - CognitoAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAdmin'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: User not found
+
+    put:
+      tags:
+        - Admin
+      summary: Update user (admin only)
+      description: Updates user information (admin fields)
+      operationId: adminUpdateUser
+      security:
+        - CognitoAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chatDisabled:
+                  type: boolean
+                isAdmin:
+                  type: boolean
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAdmin'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/conversations:
+    get:
+      tags:
+        - Admin
+      summary: List all conversations (admin only)
+      description: Returns all conversations in the system
+      operationId: adminGetConversations
+      security:
+        - CognitoAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conversation'
+                  cursor:
+                    type: string
+                    nullable: true
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/distress-alert:
+    post:
+      tags:
+        - Admin
+      summary: Send distress alert
+      description: Sends a distress alert notification (admin only)
+      operationId: sendDistressAlert
+      security:
+        - CognitoAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+                - level
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                level:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  description: Distress level (1-10)
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Alert sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Distress alert sent
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    CognitoAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Cognito JWT token (ID token or access token)
+
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: User ID
+
+    ConversationId:
+      name: conversationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Conversation ID
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - displayName
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          description: Must contain uppercase, lowercase, number, and symbol
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        preferredLanguage:
+          type: string
+          enum: [en, tr]
+          default: en
+        timezone:
+          type: string
+          default: UTC
+
+    RegisterResponse:
+      type: object
+      properties:
+        userSub:
+          type: string
+          description: Cognito user ID
+        needsConfirmation:
+          type: boolean
+          description: Whether email confirmation is required
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        tokens:
+          $ref: '#/components/schemas/Tokens'
+
+    TokenResponse:
+      type: object
+      properties:
+        tokens:
+          $ref: '#/components/schemas/Tokens'
+
+    Tokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        idToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+          description: Token expiration in seconds
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        preferredLanguage:
+          type: string
+          enum: [en, tr]
+        timezone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        preferredLanguage:
+          type: string
+          enum: [en, tr]
+
+    UserAdmin:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            isAdmin:
+              type: boolean
+            chatDisabled:
+              type: boolean
+            lastLoginAt:
+              type: string
+              format: date-time
+              nullable: true
+
+    UserUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        preferredLanguage:
+          type: string
+          enum: [en, tr]
+        timezone:
+          type: string
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId1:
+          type: string
+          format: uuid
+        userId2:
+          type: string
+          format: uuid
+        user1:
+          $ref: '#/components/schemas/UserPublic'
+        user2:
+          $ref: '#/components/schemas/UserPublic'
+        lastMessageAt:
+          type: string
+          format: date-time
+          nullable: true
+        unreadCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        sender:
+          $ref: '#/components/schemas/UserPublic'
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        clientMessageId:
+          type: string
+          nullable: true
+          description: Client-provided ID for deduplication
+
+    MessageCreate:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        clientMessageId:
+          type: string
+          description: Optional client ID for deduplication
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: ValidationError
+            message: Invalid input data
+            details:
+              email: Email is required
+
+    Unauthorized:
+      description: Unauthorized - invalid or missing token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+            message: Invalid or expired token
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Forbidden
+            message: Admin access required
+
+
+
