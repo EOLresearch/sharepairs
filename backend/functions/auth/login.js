@@ -7,6 +7,7 @@ const { CognitoIdentityProviderClient, InitiateAuthCommand } = require('@aws-sdk
 const { getUserFromToken } = require('../../shared/auth');
 const { success, error } = require('../../shared/response');
 const { schemas, validate } = require('../../shared/validation');
+const auditLogs = require('../../shared/audit');
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
@@ -49,6 +50,16 @@ exports.handler = async (event) => {
     } catch (dbError) {
       // Log but don't fail login if DB update fails
       console.warn('Failed to update last_active_at:', dbError);
+    }
+    
+    // Audit log: user login
+    const ipAddress = event.requestContext?.identity?.sourceIp || null;
+    const userAgent = event.headers?.['User-Agent'] || event.headers?.['user-agent'] || null;
+    try {
+      await auditLogs.userLogin(userInfo.userId, ipAddress, userAgent);
+    } catch (auditError) {
+      // Log but don't fail login if audit logging fails
+      console.error('Audit log failed for user login:', auditError);
     }
     
     return success({

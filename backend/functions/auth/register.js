@@ -7,6 +7,7 @@ const { CognitoIdentityProviderClient, SignUpCommand } = require('@aws-sdk/clien
 const { TABLES, putItem } = require('../../shared/database');
 const { success, error } = require('../../shared/response');
 const { schemas, validate } = require('../../shared/validation');
+const auditLogs = require('../../shared/audit');
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
@@ -54,6 +55,15 @@ exports.handler = async (event) => {
       created_at: now,
       updated_at: now
     });
+    
+    // Audit log: user registered
+    const ipAddress = event.requestContext?.identity?.sourceIp || null;
+    try {
+      await auditLogs.userRegistered(result.UserSub, email, ipAddress);
+    } catch (auditError) {
+      // Log but don't fail registration if audit logging fails
+      console.error('Audit log failed for user registration:', auditError);
+    }
     
     return success({
       message: 'User registered successfully',
