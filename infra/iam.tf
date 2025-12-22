@@ -13,7 +13,7 @@
 #   "put on" to access other AWS services. Think of it like a keycard badge.
 # 
 # Why Roles Matter:
-# - Lambda functions need a role to access RDS, S3, etc. (they can't use your 
+# - Lambda functions need a role to access DynamoDB, S3, etc. (they can't use your 
 #   user credentials)
 # - Your React app needs a role (via Cognito) to upload files to S3
 # - Roles follow "least privilege" - only grant what's absolutely needed

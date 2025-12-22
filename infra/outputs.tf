@@ -142,3 +142,27 @@ output "api_gateway_execution_arn" {
   value       = aws_apigatewayv2_api.main.execution_arn
 }
 
+# ============================================================================
+# DynamoDB Table Outputs
+# ============================================================================
+
+output "dynamodb_users_table_name" {
+  description = "Name of the DynamoDB users table"
+  value       = aws_dynamodb_table.users.name
+}
+
+output "dynamodb_conversations_table_name" {
+  description = "Name of the DynamoDB conversations table"
+  value       = aws_dynamodb_table.conversations.name
+}
+
+output "dynamodb_messages_table_name" {
+  description = "Name of the DynamoDB messages table"
+  value       = aws_dynamodb_table.messages.name
+}
+
+output "dynamodb_user_profiles_table_name" {
+  description = "Name of the DynamoDB user profiles table"
+  value       = aws_dynamodb_table.user_profiles.name
+}
+
