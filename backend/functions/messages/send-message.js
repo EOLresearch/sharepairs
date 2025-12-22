@@ -8,6 +8,7 @@ const { authenticateUser } = require('../../shared/auth');
 const { TABLES, getItem, putItem, updateItem } = require('../../shared/database');
 const { success, error } = require('../../shared/response');
 const { schemas, validate } = require('../../shared/validation');
+const auditLogs = require('../../shared/audit');
 
 exports.handler = async (event) => {
   try {
@@ -33,7 +34,7 @@ exports.handler = async (event) => {
     const messageId = uuidv4();
     const now = Date.now();
     
-    // Insert message
+    // Insert message (write-once - immutable after creation)
     await putItem(TABLES.messages, {
       id: messageId,
       conversation_id: conversationId,
@@ -42,8 +43,19 @@ exports.handler = async (event) => {
       message_type: 'text',
       status: 'sent',
       client_message_id: validatedData.clientMessageId || null,
-      created_at: now
+      created_at: now,
+      // Write-once enforcement: no updated_at field, no edit/delete flags
+      // Messages are immutable - if moderation needed, use hidden flag
+      hidden: false
     });
+    
+    // Audit log: message sent
+    try {
+      await auditLogs.messageSent(messageId, conversationId, user.userId);
+    } catch (auditError) {
+      // Log but don't fail message send if audit logging fails
+      console.error('Audit log failed for message send:', auditError);
+    }
     
     // Update conversation
     const isUser1 = conversation.user1_id === user.userId;

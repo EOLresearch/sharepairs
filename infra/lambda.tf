@@ -66,6 +66,7 @@ resource "aws_lambda_function" "auth_register" {
       CONVERSATIONS_TABLE   = aws_dynamodb_table.conversations.name
       MESSAGES_TABLE        = aws_dynamodb_table.messages.name
       USER_PROFILES_TABLE   = aws_dynamodb_table.user_profiles.name
+      AUDIT_LOGS_TABLE      = aws_dynamodb_table.audit_logs.name
       AWS_REGION            = "us-east-1"
     }
   }
@@ -93,6 +94,7 @@ resource "aws_lambda_function" "auth_login" {
       CONVERSATIONS_TABLE   = aws_dynamodb_table.conversations.name
       MESSAGES_TABLE        = aws_dynamodb_table.messages.name
       USER_PROFILES_TABLE   = aws_dynamodb_table.user_profiles.name
+      AUDIT_LOGS_TABLE      = aws_dynamodb_table.audit_logs.name
       AWS_REGION            = "us-east-1"
     }
   }

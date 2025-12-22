@@ -166,3 +166,8 @@ output "dynamodb_user_profiles_table_name" {
   value       = aws_dynamodb_table.user_profiles.name
 }
 
+output "dynamodb_audit_logs_table_name" {
+  description = "Name of the DynamoDB audit logs table (append-only)"
+  value       = aws_dynamodb_table.audit_logs.name
+}
+

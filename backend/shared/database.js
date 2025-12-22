@@ -15,7 +15,8 @@ const TABLES = {
   users: process.env.USERS_TABLE || 'sharepairs-dev-users',
   conversations: process.env.CONVERSATIONS_TABLE || 'sharepairs-dev-conversations',
   messages: process.env.MESSAGES_TABLE || 'sharepairs-dev-messages',
-  userProfiles: process.env.USER_PROFILES_TABLE || 'sharepairs-dev-user-profiles'
+  userProfiles: process.env.USER_PROFILES_TABLE || 'sharepairs-dev-user-profiles',
+  auditLogs: process.env.AUDIT_LOGS_TABLE || 'sharepairs-dev-audit-logs'
 };
 
 /**

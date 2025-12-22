@@ -165,8 +165,10 @@ resource "aws_dynamodb_table" "messages" {
 
   tags = {
     Name    = "sharepairs-dev-messages"
-    Purpose = "Chat messages in conversations"
+    Purpose = "Chat messages in conversations (write-once, immutable)"
     HIPAA   = "Compliant"
+    IRB     = "Compliant"
+    Note    = "Messages are immutable - no updates or deletes allowed"
   }
 }
 
@@ -196,6 +198,73 @@ resource "aws_dynamodb_table" "user_profiles" {
     Name    = "sharepairs-dev-user-profiles"
     Purpose = "Extended user profile data"
     HIPAA   = "Compliant"
+  }
+}
+
+# ============================================================================
+# Audit Logs Table (Append-Only)
+# ============================================================================
+
+resource "aws_dynamodb_table" "audit_logs" {
+  name           = "sharepairs-dev-audit-logs"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "id"
+  range_key      = "timestamp"  # Sort key for chronological ordering
+
+  attribute {
+    name = "id"
+    type = "S"  # String (UUID)
+  }
+
+  attribute {
+    name = "timestamp"
+    type = "N"  # Number (timestamp)
+  }
+
+  attribute {
+    name = "event_type"
+    type = "S"
+  }
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+
+  # GSI for querying by event type
+  global_secondary_index {
+    name            = "event-type-index"
+    hash_key        = "event_type"
+    range_key       = "timestamp"
+    projection_type = "ALL"
+  }
+
+  # GSI for querying by user
+  global_secondary_index {
+    name            = "user-index"
+    hash_key        = "user_id"
+    range_key       = "timestamp"
+    projection_type = "ALL"
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  # Prevent deletion of table (additional protection)
+  lifecycle {
+    prevent_destroy = false  # Set to true in production
+  }
+
+  tags = {
+    Name    = "sharepairs-dev-audit-logs"
+    Purpose = "Append-only audit log for compliance and IRB requirements"
+    HIPAA   = "Compliant"
+    IRB     = "Compliant"
   }
 }
 

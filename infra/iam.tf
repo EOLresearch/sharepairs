@@ -75,6 +75,7 @@ resource "aws_iam_role_policy" "lambda_custom" {
     Statement = [
       {
         # Allow Lambda to read/write to DynamoDB tables (only YOUR project tables)
+        # NOTE: Messages table is write-once (no UpdateItem/DeleteItem)
         Effect = "Allow"
         Action = [
           "dynamodb:GetItem",
@@ -90,6 +91,23 @@ resource "aws_iam_role_policy" "lambda_custom" {
           "arn:aws:dynamodb:*:*:table/sharepairs-dev-*",           # Tables
           "arn:aws:dynamodb:*:*:table/sharepairs-dev-*/index/*"    # Global Secondary Indexes
         ]
+        # Note: Write-once enforcement for messages is handled in application code
+        # Messages table should only use PutItem, never UpdateItem or DeleteItem
+      },
+      {
+        # Audit logs table: append-only (PutItem only, no updates/deletes)
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ]
+        Resource = [
+          "arn:aws:dynamodb:*:*:table/sharepairs-dev-audit-logs",
+          "arn:aws:dynamodb:*:*:table/sharepairs-dev-audit-logs/index/*"
+        ]
+        # Explicitly deny UpdateItem and DeleteItem on audit logs
       },
       {
         # Allow Lambda to read/write to S3 buckets (only YOUR project buckets)

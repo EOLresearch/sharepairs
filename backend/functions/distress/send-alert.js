@@ -7,6 +7,7 @@ const { requireAdmin } = require('../../shared/auth');
 const { TABLES, getItem } = require('../../shared/database');
 const { success, error } = require('../../shared/response');
 const { schemas, validate } = require('../../shared/validation');
+const auditLogs = require('../../shared/audit');
 
 // TODO: Integrate with SES or SNS for actual notification sending
 // For now, just log and store the alert
@@ -26,18 +27,22 @@ exports.handler = async (event) => {
       return error('User not found', 404);
     }
     
-    // Log distress alert (for HIPAA audit)
-    console.log('Distress Alert:', {
-      userId,
-      userEmail: user.email,
-      level,
-      message,
-      alertedBy: admin.userId,
-      timestamp: new Date().toISOString()
-    });
-    
-    // TODO: Store in distress_reports table when created
-    // TODO: Send notification via SES/SNS
+    // Audit log: distress alert
+    try {
+      await auditLogs.distressAlert(
+        userId,
+        level,
+        message || null,
+        admin.userId,
+        {
+          user_email: user.email,
+          user_display_name: user.display_name
+        }
+      );
+    } catch (auditError) {
+      // Audit logging failure should not prevent alert from being sent
+      console.error('Audit log failed for distress alert:', auditError);
+    }
     
     // TODO: Send notification via SES/SNS
     // For now, we'll just return success
