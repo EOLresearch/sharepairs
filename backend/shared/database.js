@@ -1,175 +1,91 @@
-/**
- * DynamoDB utility for Lambda functions
- * Provides helper functions for common DynamoDB operations
- */
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, DeleteCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, DeleteCommand, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
-
-// Create DynamoDB client
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+// Initialize DynamoDB client
+// AWS_REGION is automatically provided by Lambda runtime
+const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-// Table names
-const TABLES = {
-  users: process.env.USERS_TABLE || 'sharepairs-dev-users',
-  conversations: process.env.CONVERSATIONS_TABLE || 'sharepairs-dev-conversations',
-  messages: process.env.MESSAGES_TABLE || 'sharepairs-dev-messages',
-  userProfiles: process.env.USER_PROFILES_TABLE || 'sharepairs-dev-user-profiles',
-  auditLogs: process.env.AUDIT_LOGS_TABLE || 'sharepairs-dev-audit-logs'
+// Table names from environment variables
+export const TABLES = {
+  USERS: process.env.USERS_TABLE || 'sharepairs-dev-users',
+  CONVERSATIONS: process.env.CONVERSATIONS_TABLE || 'sharepairs-dev-conversations',
+  MESSAGES: process.env.MESSAGES_TABLE || 'sharepairs-dev-messages',
+  USER_PROFILES: process.env.USER_PROFILES_TABLE || 'sharepairs-dev-user-profiles',
+  AUDIT_LOGS: process.env.AUDIT_LOGS_TABLE || 'sharepairs-dev-audit-logs',
+  FILES: process.env.FILES_TABLE || 'sharepairs-dev-files',
+  DISTRESS_EVENTS: process.env.DISTRESS_EVENTS_TABLE || 'sharepairs-dev-distress-events'
 };
 
 /**
- * Get item by primary key
+ * Get a single item from DynamoDB
  */
-const getItem = async (tableName, key) => {
-  try {
-    const command = new GetCommand({
-      TableName: tableName,
-      Key: key
-    });
-    const result = await docClient.send(command);
-    return result.Item || null;
-  } catch (error) {
-    console.error('DynamoDB getItem error:', error);
-    throw error;
-  }
-};
+export async function getItem(tableName, key) {
+  const command = new GetCommand({
+    TableName: tableName,
+    Key: key
+  });
+  const response = await docClient.send(command);
+  return response.Item || null;
+}
 
 /**
- * Put item (create or replace)
+ * Put an item into DynamoDB
  */
-const putItem = async (tableName, item) => {
-  try {
-    const command = new PutCommand({
-      TableName: tableName,
-      Item: item
-    });
-    await docClient.send(command);
-    return item;
-  } catch (error) {
-    console.error('DynamoDB putItem error:', error);
-    throw error;
-  }
-};
+export async function putItem(tableName, item) {
+  const command = new PutCommand({
+    TableName: tableName,
+    Item: item
+  });
+  await docClient.send(command);
+  return item;
+}
 
 /**
- * Update item (partial update)
+ * Update an item in DynamoDB
  */
-const updateItem = async (tableName, key, updates) => {
-  try {
-    // Build update expression
-    const updateExpressions = [];
-    const expressionAttributeNames = {};
-    const expressionAttributeValues = {};
-    let attrCount = 0;
-
-    for (const [field, value] of Object.entries(updates)) {
-      const attrName = `#attr${attrCount}`;
-      const attrValue = `:val${attrCount}`;
-      
-      updateExpressions.push(`${attrName} = ${attrValue}`);
-      expressionAttributeNames[attrName] = field;
-      expressionAttributeValues[attrValue] = value;
-      attrCount++;
-    }
-
-    // Add updated_at timestamp
-    updateExpressions.push(`#updatedAt = :updatedAt`);
-    expressionAttributeNames['#updatedAt'] = 'updated_at';
-    expressionAttributeValues[':updatedAt'] = Date.now();
-
-    const command = new UpdateCommand({
-      TableName: tableName,
-      Key: key,
-      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-      ExpressionAttributeNames: expressionAttributeNames,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ReturnValues: 'ALL_NEW'
-    });
-
-    const result = await docClient.send(command);
-    return result.Attributes;
-  } catch (error) {
-    console.error('DynamoDB updateItem error:', error);
-    throw error;
-  }
-};
+export async function updateItem(tableName, key, updates) {
+  const command = new UpdateCommand({
+    TableName: tableName,
+    Key: key,
+    ...updates
+  });
+  const response = await docClient.send(command);
+  return response.Attributes;
+}
 
 /**
- * Delete item
+ * Delete an item from DynamoDB
  */
-const deleteItem = async (tableName, key) => {
-  try {
-    const command = new DeleteCommand({
-      TableName: tableName,
-      Key: key
-    });
-    await docClient.send(command);
-    return true;
-  } catch (error) {
-    console.error('DynamoDB deleteItem error:', error);
-    throw error;
-  }
-};
+export async function deleteItem(tableName, key) {
+  const command = new DeleteCommand({
+    TableName: tableName,
+    Key: key
+  });
+  await docClient.send(command);
+}
 
 /**
- * Query items (with GSI support)
+ * Query DynamoDB table
  */
-const query = async (tableName, keyCondition, options = {}) => {
-  try {
-    const command = new QueryCommand({
-      TableName: tableName,
-      IndexName: options.indexName,
-      KeyConditionExpression: keyCondition.expression,
-      ExpressionAttributeNames: keyCondition.names,
-      ExpressionAttributeValues: keyCondition.values,
-      Limit: options.limit,
-      ScanIndexForward: options.scanForward !== false, // Default: ascending
-      ExclusiveStartKey: options.cursor
-    });
-
-    const result = await docClient.send(command);
-    return {
-      items: result.Items || [],
-      cursor: result.LastEvaluatedKey || null
-    };
-  } catch (error) {
-    console.error('DynamoDB query error:', error);
-    throw error;
-  }
-};
+export async function query(tableName, params) {
+  const command = new QueryCommand({
+    TableName: tableName,
+    ...params
+  });
+  const response = await docClient.send(command);
+  return response.Items || [];
+}
 
 /**
- * Scan table (use sparingly - prefer Query)
+ * Scan DynamoDB table
  */
-const scan = async (tableName, options = {}) => {
-  try {
-    const command = new ScanCommand({
-      TableName: tableName,
-      Limit: options.limit,
-      ExclusiveStartKey: options.cursor
-    });
-
-    const result = await docClient.send(command);
-    return {
-      items: result.Items || [],
-      cursor: result.LastEvaluatedKey || null
-    };
-  } catch (error) {
-    console.error('DynamoDB scan error:', error);
-    throw error;
-  }
-};
-
-module.exports = {
-  TABLES,
-  getItem,
-  putItem,
-  updateItem,
-  deleteItem,
-  query,
-  scan,
-  docClient
-};
+export async function scan(tableName, params = {}) {
+  const command = new ScanCommand({
+    TableName: tableName,
+    ...params
+  });
+  const response = await docClient.send(command);
+  return response.Items || [];
+}
 

@@ -1,77 +1,44 @@
+import Joi from 'joi';
+
 /**
- * Request validation using Joi
+ * Validation schemas for API requests
  */
 
-const Joi = require('joi');
-
-const schemas = {
-  register: Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().min(8).required(),
-    displayName: Joi.string().min(2).max(100).required(),
-    preferredLanguage: Joi.string().valid('en', 'tr').default('en'),
-    timezone: Joi.string().default('UTC')
+export const schemas = {
+  // File upload URL request
+  uploadUrlRequest: Joi.object({
+    fileName: Joi.string().required().max(255),
+    contentType: Joi.string().required().max(100),
+    fileSize: Joi.number().integer().min(1).max(50 * 1024 * 1024).optional() // Max 50MB
   }),
 
-  login: Joi.object({
-    email: Joi.string().email().required(),
-    password: Joi.string().required()
+  // File download URL request (no body, just path param)
+  downloadUrlRequest: Joi.object({
+    fileId: Joi.string().required()
   }),
 
-  refreshToken: Joi.object({
-    refreshToken: Joi.string().required()
-  }),
-
-  forgotPassword: Joi.object({
-    email: Joi.string().email().required()
-  }),
-
-  resetPassword: Joi.object({
-    email: Joi.string().email().required(),
-    code: Joi.string().required(),
-    newPassword: Joi.string().min(8).required()
-  }),
-
-  updateProfile: Joi.object({
-    displayName: Joi.string().min(2).max(100).optional(),
-    preferredLanguage: Joi.string().valid('en', 'tr').optional(),
-    timezone: Joi.string().optional()
-  }),
-
-  sendMessage: Joi.object({
-    content: Joi.string().min(1).max(1000).required(),
-    clientMessageId: Joi.string().optional()
-  }),
-
-  createConversation: Joi.object({
-    userId1: Joi.string().uuid().required(),
-    userId2: Joi.string().uuid().required()
-  }),
-
-  distressAlert: Joi.object({
-    userId: Joi.string().uuid().required(),
-    level: Joi.number().integer().min(1).max(10).required(),
-    message: Joi.string().optional()
+  // Distress alert submission
+  distressSubmit: Joi.object({
+    score: Joi.number().integer().min(0).max(100).required(),
+    message: Joi.string().max(1000).optional().allow(null, ''),
+    context: Joi.object().optional().allow(null)
   })
 };
 
-const validate = (schema, data) => {
+/**
+ * Validate request body against schema
+ */
+export function validate(schema, data) {
   const { error, value } = schema.validate(data, { abortEarly: false });
   
   if (error) {
-    const errors = error.details.map(detail => ({
-      field: detail.path.join('.'),
-      message: detail.message
+    const details = error.details.map(d => ({
+      field: d.path.join('.'),
+      message: d.message
     }));
-    
-    throw new Error(`Validation failed: ${errors.map(e => e.message).join(', ')}`);
+    throw new Error(`Validation error: ${details.map(d => d.message).join(', ')}`);
   }
   
   return value;
-};
-
-module.exports = {
-  schemas,
-  validate
-};
+}
 

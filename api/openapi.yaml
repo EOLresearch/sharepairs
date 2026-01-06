@@ -31,6 +31,10 @@ tags:
     description: User profile and match management
   - name: Conversations
     description: Chat conversations and messages
+  - name: Files
+    description: File upload and download via presigned URLs
+  - name: Distress
+    description: Distress alert submission and notifications
   - name: Admin
     description: Administrative functions (admin only)
 
@@ -480,6 +484,134 @@ paths:
           description: Conversation not found
 
   # ============================================================================
+  # File Endpoints
+  # ============================================================================
+  
+  /files/upload-url:
+    post:
+      tags:
+        - Files
+      summary: Generate presigned upload URL
+      description: |
+        Generates a temporary presigned URL for uploading a file directly to S3.
+        The URL expires after 10 minutes. The client should use this URL to upload
+        the file using a PUT request.
+      operationId: generateUploadUrl
+      security:
+        - CognitoAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+            examples:
+              example:
+                value:
+                  fileName: "profile.jpg"
+                  contentType: "image/jpeg"
+                  fileSize: 1024000
+      responses:
+        '200':
+          description: Upload URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /files/{fileId}/download-url:
+    get:
+      tags:
+        - Files
+      summary: Generate presigned download URL
+      description: |
+        Generates a temporary presigned URL for downloading a file from S3.
+        The URL expires after 15 minutes. Users can only download their own files
+        or files from conversations they're part of.
+      operationId: generateDownloadUrl
+      security:
+        - CognitoAuth: []
+      parameters:
+        - name: fileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: File ID
+      responses:
+        '200':
+          description: Download URL generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DownloadUrlResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============================================================================
+  # Distress Alert Endpoint
+  # ============================================================================
+  
+  /distress:
+    post:
+      tags:
+        - Distress
+      summary: Submit distress alert
+      description: |
+        Submits a distress score (0-100). If score is above threshold (default 70),
+        the alert is queued for email notification to support team.
+        
+        **Rate Limiting:** Only one high-distress alert per user per 15 minutes.
+        
+        **Idempotency:** Each submission creates a unique event ID.
+      operationId: submitDistressAlert
+      security:
+        - CognitoAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DistressSubmit'
+            examples:
+              example:
+                value:
+                  score: 85
+                  message: "Feeling overwhelmed today"
+                  context:
+                    trigger: "anniversary"
+      responses:
+        '200':
+          description: Distress alert submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DistressResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ============================================================================
   # Admin Endpoints
   # ============================================================================
   
@@ -890,6 +1022,113 @@ components:
         clientMessageId:
           type: string
           description: Optional client ID for deduplication
+
+    UploadUrlRequest:
+      type: object
+      required:
+        - fileName
+        - contentType
+      properties:
+        fileName:
+          type: string
+          maxLength: 255
+          description: Original file name
+        contentType:
+          type: string
+          maxLength: 100
+          description: MIME type of the file (e.g., image/jpeg, application/pdf)
+        fileSize:
+          type: integer
+          minimum: 1
+          maximum: 52428800
+          description: File size in bytes (max 50MB)
+
+    UploadUrlResponse:
+      type: object
+      required:
+        - uploadUrl
+        - fileId
+        - fileKey
+        - expiresIn
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: Presigned URL for uploading the file (PUT request)
+        fileId:
+          type: string
+          format: uuid
+          description: Unique file ID for tracking
+        fileKey:
+          type: string
+          description: S3 object key (path in bucket)
+        expiresIn:
+          type: integer
+          description: URL expiration time in seconds
+
+    DownloadUrlResponse:
+      type: object
+      required:
+        - downloadUrl
+        - expiresIn
+      properties:
+        downloadUrl:
+          type: string
+          format: uri
+          description: Presigned URL for downloading the file (GET request)
+        fileName:
+          type: string
+          description: Original file name
+        contentType:
+          type: string
+          description: MIME type of the file
+        fileSize:
+          type: integer
+          nullable: true
+          description: File size in bytes
+        expiresIn:
+          type: integer
+          description: URL expiration time in seconds
+
+    DistressSubmit:
+      type: object
+      required:
+        - score
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Distress score (0-100)
+        message:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Optional message from user
+        context:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Optional context/metadata
+
+    DistressResponse:
+      type: object
+      required:
+        - eventId
+        - score
+        - status
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Unique event ID
+        score:
+          type: integer
+          description: Submitted distress score
+        status:
+          type: string
+          enum: [recorded, queued, queue_failed]
+          description: Event status (recorded = below threshold, queued = notification queued)
 
     Error:
       type: object

@@ -13,7 +13,7 @@
 #   "put on" to access other AWS services. Think of it like a keycard badge.
 # 
 # Why Roles Matter:
-# - Lambda functions need a role to access DynamoDB, S3, etc. (they can't use your 
+# - Lambda functions need a role to access RDS, S3, etc. (they can't use your 
 #   user credentials)
 # - Your React app needs a role (via Cognito) to upload files to S3
 # - Roles follow "least privilege" - only grant what's absolutely needed
@@ -75,7 +75,6 @@ resource "aws_iam_role_policy" "lambda_custom" {
     Statement = [
       {
         # Allow Lambda to read/write to DynamoDB tables (only YOUR project tables)
-        # NOTE: Messages table is write-once (no UpdateItem/DeleteItem)
         Effect = "Allow"
         Action = [
           "dynamodb:GetItem",
@@ -91,23 +90,6 @@ resource "aws_iam_role_policy" "lambda_custom" {
           "arn:aws:dynamodb:*:*:table/sharepairs-dev-*",           # Tables
           "arn:aws:dynamodb:*:*:table/sharepairs-dev-*/index/*"    # Global Secondary Indexes
         ]
-        # Note: Write-once enforcement for messages is handled in application code
-        # Messages table should only use PutItem, never UpdateItem or DeleteItem
-      },
-      {
-        # Audit logs table: append-only (PutItem only, no updates/deletes)
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:Query",
-          "dynamodb:Scan"
-        ]
-        Resource = [
-          "arn:aws:dynamodb:*:*:table/sharepairs-dev-audit-logs",
-          "arn:aws:dynamodb:*:*:table/sharepairs-dev-audit-logs/index/*"
-        ]
-        # Explicitly deny UpdateItem and DeleteItem on audit logs
       },
       {
         # Allow Lambda to read/write to S3 buckets (only YOUR project buckets)
@@ -134,6 +116,44 @@ resource "aws_iam_role_policy" "lambda_custom" {
         ]
         Resource = "*"
         # Note: KMS key policy will further restrict this to specific keys
+      },
+      {
+        # Allow Lambda to send messages to SQS (for distress alerts)
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
+        ]
+        Resource = [
+          "arn:aws:sqs:*:*:sharepairs-dev-distress-alerts",
+          "arn:aws:sqs:*:*:sharepairs-dev-distress-alerts-dlq"
+        ]
+      },
+      {
+        # Allow Lambda to receive and delete messages from SQS (for worker)
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl",
+          "sqs:ChangeMessageVisibility"
+        ]
+        Resource = [
+          "arn:aws:sqs:*:*:sharepairs-dev-distress-alerts",
+          "arn:aws:sqs:*:*:sharepairs-dev-distress-alerts-dlq"
+        ]
+      },
+      {
+        # Allow Lambda to send emails via SES
+        Effect = "Allow"
+        Action = [
+          "ses:SendEmail",
+          "ses:SendRawEmail"
+        ]
+        Resource = "*"
+        # Note: SES identity verification (email/domain) must be done separately
       }
     ]
   })

@@ -1,440 +1,210 @@
 # ============================================================================
-# Lambda Functions for Share Pairs API
-# ============================================================================
-# 
-# LAMBDA EXPLAINED:
-# -----------------
-# 
-# Lambda functions are serverless functions that run your backend code:
-# - No servers to manage
-# - Pay only for what you use
-# - Auto-scales based on traffic
-# - Integrates with API Gateway, S3, DynamoDB, etc.
-#
-# What This Does:
-# - Creates Lambda functions for each API endpoint
-# - Packages and deploys the code
-# - Connects functions to API Gateway routes
-# - Sets up environment variables
-# - Configures IAM permissions
-#
+# Lambda Functions
 # ============================================================================
 
-# Get Lambda execution role ARN
-data "aws_iam_role" "lambda_execution" {
-  name = "sharepairs-lambda-execution-role"
+# Archive provider is already defined in main.tf
+# AWS region data source is defined in s3.tf
+
+# ============================================================================
+# Lambda Function: Upload URL Generator
+# ============================================================================
+
+# Package upload-url function with shared utilities and dependencies
+data "archive_file" "upload_url" {
+  type        = "zip"
+  source_dir  = "${path.module}/../backend"
+  output_path = "${path.module}/../backend/functions/files/upload-url.zip"
+  excludes = [
+    "*.zip",
+    ".build/**",
+    "functions/**/download-url.js",
+    "functions/auth/**",
+    "functions/users/**",
+    "functions/messages/**",
+    "functions/distress/**",
+    "package-lock.json"
+  ]
 }
 
-# ============================================================================
-# Lambda Layer for Shared Dependencies
-# ============================================================================
-# Note: For now, we'll bundle dependencies with each function
-# In production, consider using Lambda Layers for shared code
+resource "aws_lambda_function" "upload_url" {
+  function_name = "sharepairs-dev-upload-url"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "functions/files/upload-url.handler"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
 
-# ============================================================================
-# Lambda Function Packaging
-# ============================================================================
-# 
-# NOTE: Before deploying, run: cd backend && ./build.sh
-# This will create the zip files needed for Lambda deployment
-#
-# The build script packages each function with:
-# - The function file itself
-# - The shared/ directory (database, auth, response, validation utilities)
-# - node_modules (production dependencies)
-#
-# ============================================================================
-
-# ============================================================================
-# Auth Lambda Functions
-# ============================================================================
-
-resource "aws_lambda_function" "auth_register" {
-  filename         = "${path.module}/../backend/functions/auth/register.zip"
-  function_name    = "sharepairs-dev-auth-register"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "register.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/auth/register.zip") ? filebase64sha256("${path.module}/../backend/functions/auth/register.zip") : null
+  filename         = data.archive_file.upload_url.output_path
+  source_code_hash = data.archive_file.upload_url.output_base64sha256
 
   environment {
     variables = {
-      COGNITO_CLIENT_ID     = aws_cognito_user_pool_client.main.id
-      COGNITO_USER_POOL_ID  = aws_cognito_user_pool.main.id
-      USERS_TABLE           = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE   = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE        = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE   = aws_dynamodb_table.user_profiles.name
+      USER_UPLOADS_BUCKET  = aws_s3_bucket.user_uploads.id
+      UPLOAD_URL_EXPIRATION = "600" # 10 minutes
+      FILES_TABLE           = aws_dynamodb_table.files.name
       AUDIT_LOGS_TABLE      = aws_dynamodb_table.audit_logs.name
-      AWS_REGION            = "us-east-1"
     }
   }
 
   tags = {
-    Name    = "sharepairs-dev-auth-register"
-    Purpose = "User registration"
-  }
-}
-
-resource "aws_lambda_function" "auth_login" {
-  filename         = "${path.module}/../backend/functions/auth/login.zip"
-  function_name    = "sharepairs-dev-auth-login"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "login.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/auth/login.zip") ? filebase64sha256("${path.module}/../backend/functions/auth/login.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_CLIENT_ID     = aws_cognito_user_pool_client.main.id
-      COGNITO_USER_POOL_ID  = aws_cognito_user_pool.main.id
-      USERS_TABLE           = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE   = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE        = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE   = aws_dynamodb_table.user_profiles.name
-      AUDIT_LOGS_TABLE      = aws_dynamodb_table.audit_logs.name
-      AWS_REGION            = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-auth-login"
-    Purpose = "User login"
-  }
-}
-
-resource "aws_lambda_function" "auth_refresh" {
-  filename         = "${path.module}/../backend/functions/auth/refresh.zip"
-  function_name    = "sharepairs-dev-auth-refresh"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "refresh.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/auth/refresh.zip") ? filebase64sha256("${path.module}/../backend/functions/auth/refresh.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_CLIENT_ID = aws_cognito_user_pool_client.main.id
-      AWS_REGION        = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-auth-refresh"
-    Purpose = "Token refresh"
-  }
-}
-
-resource "aws_lambda_function" "auth_forgot_password" {
-  filename         = "${path.module}/../backend/functions/auth/forgot-password.zip"
-  function_name    = "sharepairs-dev-auth-forgot-password"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "forgot-password.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/auth/forgot-password.zip") ? filebase64sha256("${path.module}/../backend/functions/auth/forgot-password.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_CLIENT_ID = aws_cognito_user_pool_client.main.id
-      AWS_REGION        = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-auth-forgot-password"
-    Purpose = "Password reset request"
-  }
-}
-
-resource "aws_lambda_function" "auth_reset_password" {
-  filename         = "${path.module}/../backend/functions/auth/reset-password.zip"
-  function_name    = "sharepairs-dev-auth-reset-password"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "reset-password.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/auth/reset-password.zip") ? filebase64sha256("${path.module}/../backend/functions/auth/reset-password.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_CLIENT_ID = aws_cognito_user_pool_client.main.id
-      AWS_REGION        = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-auth-reset-password"
-    Purpose = "Password reset confirmation"
+    Name    = "sharepairs-dev-upload-url"
+    Purpose = "Generate presigned S3 upload URLs"
   }
 }
 
 # ============================================================================
-# Users Lambda Functions
+# Lambda Function: Download URL Generator
 # ============================================================================
 
-resource "aws_lambda_function" "users_get_me" {
-  filename         = "${path.module}/../backend/functions/users/get-me.zip"
-  function_name    = "sharepairs-dev-users-get-me"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "get-me.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/users/get-me.zip") ? filebase64sha256("${path.module}/../backend/functions/users/get-me.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
-      USERS_TABLE          = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE  = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE       = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE  = aws_dynamodb_table.user_profiles.name
-      AWS_REGION           = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-users-get-me"
-    Purpose = "Get current user profile"
-  }
+data "archive_file" "download_url" {
+  type        = "zip"
+  source_dir  = "${path.module}/../backend"
+  output_path = "${path.module}/../backend/functions/files/download-url.zip"
+  excludes = [
+    "*.zip",
+    ".build/**",
+    "functions/**/upload-url.js",
+    "functions/auth/**",
+    "functions/users/**",
+    "functions/messages/**",
+    "functions/distress/**",
+    "package-lock.json"
+  ]
 }
 
-resource "aws_lambda_function" "users_update_me" {
-  filename         = "${path.module}/../backend/functions/users/update-me.zip"
-  function_name    = "sharepairs-dev-users-update-me"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "update-me.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/users/update-me.zip") ? filebase64sha256("${path.module}/../backend/functions/users/update-me.zip") : null
+resource "aws_lambda_function" "download_url" {
+  function_name = "sharepairs-dev-download-url"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "functions/files/download-url.handler"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = data.archive_file.download_url.output_path
+  source_code_hash = data.archive_file.download_url.output_base64sha256
 
   environment {
     variables = {
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
-      USERS_TABLE          = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE  = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE       = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE  = aws_dynamodb_table.user_profiles.name
-      AWS_REGION           = "us-east-1"
+      USER_UPLOADS_BUCKET     = aws_s3_bucket.user_uploads.id
+      DOWNLOAD_URL_EXPIRATION = "900" # 15 minutes
+      FILES_TABLE             = aws_dynamodb_table.files.name
+      AUDIT_LOGS_TABLE        = aws_dynamodb_table.audit_logs.name
     }
   }
 
   tags = {
-    Name    = "sharepairs-dev-users-update-me"
-    Purpose = "Update current user profile"
-  }
-}
-
-resource "aws_lambda_function" "users_get_by_id" {
-  filename         = "${path.module}/../backend/functions/users/get-by-id.zip"
-  function_name    = "sharepairs-dev-users-get-by-id"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "get-by-id.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/users/get-by-id.zip") ? filebase64sha256("${path.module}/../backend/functions/users/get-by-id.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
-      USERS_TABLE          = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE  = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE       = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE  = aws_dynamodb_table.user_profiles.name
-      AWS_REGION           = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-users-get-by-id"
-    Purpose = "Get user by ID"
+    Name    = "sharepairs-dev-download-url"
+    Purpose = "Generate presigned S3 download URLs"
   }
 }
 
 # ============================================================================
-# Messages Lambda Functions
+# Lambda Function: Distress Alert Submission
 # ============================================================================
 
-resource "aws_lambda_function" "messages_get_conversations" {
-  filename         = "${path.module}/../backend/functions/messages/get-conversations.zip"
-  function_name    = "sharepairs-dev-messages-get-conversations"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "get-conversations.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/messages/get-conversations.zip") ? filebase64sha256("${path.module}/../backend/functions/messages/get-conversations.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
-      USERS_TABLE          = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE  = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE       = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE  = aws_dynamodb_table.user_profiles.name
-      AWS_REGION           = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-messages-get-conversations"
-    Purpose = "Get user conversations"
-  }
+data "archive_file" "distress_submit" {
+  type        = "zip"
+  source_dir  = "${path.module}/../backend"
+  output_path = "${path.module}/../backend/functions/distress/submit.zip"
+  excludes = [
+    "*.zip",
+    ".build/**",
+    "functions/**/download-url.js",
+    "functions/**/upload-url.js",
+    "functions/**/worker.js",
+    "functions/auth/**",
+    "functions/users/**",
+    "functions/messages/**",
+    "functions/files/**"
+  ]
 }
 
-resource "aws_lambda_function" "messages_get_messages" {
-  filename         = "${path.module}/../backend/functions/messages/get-messages.zip"
-  function_name    = "sharepairs-dev-messages-get-messages"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "get-messages.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/messages/get-messages.zip") ? filebase64sha256("${path.module}/../backend/functions/messages/get-messages.zip") : null
+resource "aws_lambda_function" "distress_submit" {
+  function_name = "sharepairs-dev-distress-submit"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "functions/distress/submit.handler"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = data.archive_file.distress_submit.output_path
+  source_code_hash = data.archive_file.distress_submit.output_base64sha256
 
   environment {
     variables = {
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
-      USERS_TABLE          = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE  = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE       = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE  = aws_dynamodb_table.user_profiles.name
-      AWS_REGION           = "us-east-1"
+      DISTRESS_THRESHOLD            = "70"
+      DISTRESS_RATE_LIMIT_MINUTES   = "15"
+      DISTRESS_QUEUE_URL            = aws_sqs_queue.distress_alerts.url
+      DISTRESS_EVENTS_TABLE         = aws_dynamodb_table.distress_events.name
+      AUDIT_LOGS_TABLE              = aws_dynamodb_table.audit_logs.name
     }
   }
 
   tags = {
-    Name    = "sharepairs-dev-messages-get-messages"
-    Purpose = "Get conversation messages"
-  }
-}
-
-resource "aws_lambda_function" "messages_send_message" {
-  filename         = "${path.module}/../backend/functions/messages/send-message.zip"
-  function_name    = "sharepairs-dev-messages-send-message"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "send-message.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/messages/send-message.zip") ? filebase64sha256("${path.module}/../backend/functions/messages/send-message.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
-      USERS_TABLE          = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE  = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE       = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE  = aws_dynamodb_table.user_profiles.name
-      AWS_REGION           = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-messages-send-message"
-    Purpose = "Send message"
+    Name    = "sharepairs-dev-distress-submit"
+    Purpose = "Submit distress alerts and queue notifications"
   }
 }
 
 # ============================================================================
-# Files Lambda Functions
+# Lambda Function: Distress Alert Worker (SQS-triggered)
 # ============================================================================
 
-resource "aws_lambda_function" "files_upload" {
-  filename         = "${path.module}/../backend/functions/files/upload.zip"
-  function_name    = "sharepairs-dev-files-upload"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "upload.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/files/upload.zip") ? filebase64sha256("${path.module}/../backend/functions/files/upload.zip") : null
+data "archive_file" "distress_worker" {
+  type        = "zip"
+  source_dir  = "${path.module}/../backend"
+  output_path = "${path.module}/../backend/functions/distress/worker.zip"
+  excludes = [
+    "*.zip",
+    ".build/**",
+    "functions/**/download-url.js",
+    "functions/**/upload-url.js",
+    "functions/**/submit.js",
+    "functions/auth/**",
+    "functions/users/**",
+    "functions/messages/**",
+    "functions/files/**"
+  ]
+}
+
+resource "aws_lambda_function" "distress_worker" {
+  function_name = "sharepairs-dev-distress-worker"
+  role          = aws_iam_role.lambda_execution.arn
+  handler       = "functions/distress/worker.handler"
+  runtime       = "nodejs20.x"
+  timeout       = 60  # Longer timeout for email sending
+  memory_size   = 256
+
+  filename         = data.archive_file.distress_worker.output_path
+  source_code_hash = data.archive_file.distress_worker.output_base64sha256
 
   environment {
     variables = {
-      COGNITO_USER_POOL_ID  = aws_cognito_user_pool.main.id
-      USER_UPLOADS_BUCKET   = aws_s3_bucket.user_uploads.id
-      AWS_REGION            = "us-east-1"
+      SUPPORT_EMAIL           = "support@sharepairs.com"  # Update with actual email
+      STUDY_EMAIL             = "study@sharepairs.com"    # Update with actual email
+      SES_SENDER_EMAIL        = "alerts@sharepairs.com"  # Must be verified in SES
+      SES_CONFIGURATION_SET   = aws_ses_configuration_set.distress_alerts.name
+      DISTRESS_EVENTS_TABLE   = aws_dynamodb_table.distress_events.name
+      AUDIT_LOGS_TABLE        = aws_dynamodb_table.audit_logs.name
+      DISTRESS_THRESHOLD      = "70"
     }
   }
 
   tags = {
-    Name    = "sharepairs-dev-files-upload"
-    Purpose = "Generate file upload URL"
+    Name    = "sharepairs-dev-distress-worker"
+    Purpose = "Process distress alerts from SQS and send emails via SES"
   }
 }
 
-resource "aws_lambda_function" "files_get" {
-  filename         = "${path.module}/../backend/functions/files/get.zip"
-  function_name    = "sharepairs-dev-files-get"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "get.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/files/get.zip") ? filebase64sha256("${path.module}/../backend/functions/files/get.zip") : null
+# SQS Event Source Mapping - Trigger worker Lambda when messages arrive
+resource "aws_lambda_event_source_mapping" "distress_worker" {
+  event_source_arn                   = aws_sqs_queue.distress_alerts.arn
+  function_name                      = aws_lambda_function.distress_worker.arn
+  batch_size                         = 1  # Process one message at a time for reliability
+  maximum_batching_window_in_seconds = 0  # Process immediately
+  enabled                            = true
 
-  environment {
-    variables = {
-      COGNITO_USER_POOL_ID  = aws_cognito_user_pool.main.id
-      USER_UPLOADS_BUCKET   = aws_s3_bucket.user_uploads.id
-      AWS_REGION            = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-files-get"
-    Purpose = "Generate file download URL"
-  }
-}
-
-resource "aws_lambda_function" "files_delete" {
-  filename         = "${path.module}/../backend/functions/files/delete.zip"
-  function_name    = "sharepairs-dev-files-delete"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "delete.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/files/delete.zip") ? filebase64sha256("${path.module}/../backend/functions/files/delete.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_USER_POOL_ID  = aws_cognito_user_pool.main.id
-      USER_UPLOADS_BUCKET   = aws_s3_bucket.user_uploads.id
-      AWS_REGION            = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-files-delete"
-    Purpose = "Delete file"
-  }
-}
-
-# ============================================================================
-# Distress Lambda Function
-# ============================================================================
-
-resource "aws_lambda_function" "distress_send_alert" {
-  filename         = "${path.module}/../backend/functions/distress/send-alert.zip"
-  function_name    = "sharepairs-dev-distress-send-alert"
-  role            = data.aws_iam_role.lambda_execution.arn
-  handler         = "send-alert.handler"
-  runtime         = "nodejs20.x"
-  timeout         = 30
-  source_code_hash = fileexists("${path.module}/../backend/functions/distress/send-alert.zip") ? filebase64sha256("${path.module}/../backend/functions/distress/send-alert.zip") : null
-
-  environment {
-    variables = {
-      COGNITO_USER_POOL_ID = aws_cognito_user_pool.main.id
-      USERS_TABLE          = aws_dynamodb_table.users.name
-      CONVERSATIONS_TABLE  = aws_dynamodb_table.conversations.name
-      MESSAGES_TABLE       = aws_dynamodb_table.messages.name
-      USER_PROFILES_TABLE  = aws_dynamodb_table.user_profiles.name
-      AWS_REGION           = "us-east-1"
-    }
-  }
-
-  tags = {
-    Name    = "sharepairs-dev-distress-send-alert"
-    Purpose = "Send distress alert (admin)"
-  }
+  # Retry configuration
+  maximum_retry_attempts = 3  # Retry 3 times before sending to DLQ
 }
 
