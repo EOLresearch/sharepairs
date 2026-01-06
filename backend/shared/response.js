@@ -2,7 +2,7 @@
  * Standardized API response helpers
  */
 
-const success = (data, statusCode = 200) => {
+export function success(data, statusCode = 200) {
   return {
     statusCode,
     headers: {
@@ -13,18 +13,17 @@ const success = (data, statusCode = 200) => {
     },
     body: JSON.stringify(data)
   };
-};
+}
 
-const error = (message, statusCode = 400, details = null) => {
+export function error(message, statusCode = 400, details = null) {
   const response = {
-    error: message,
-    message: message
+    error: message
   };
   
   if (details) {
     response.details = details;
   }
-  
+
   return {
     statusCode,
     headers: {
@@ -35,10 +34,5 @@ const error = (message, statusCode = 400, details = null) => {
     },
     body: JSON.stringify(response)
   };
-};
-
-module.exports = {
-  success,
-  error
-};
+}
 

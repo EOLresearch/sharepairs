@@ -143,31 +143,49 @@ output "api_gateway_execution_arn" {
 }
 
 # ============================================================================
-# DynamoDB Table Outputs
+# DynamoDB Outputs
 # ============================================================================
 
-output "dynamodb_users_table_name" {
-  description = "Name of the DynamoDB users table"
-  value       = aws_dynamodb_table.users.name
+output "files_table_name" {
+  description = "Name of the files DynamoDB table"
+  value       = aws_dynamodb_table.files.name
 }
 
-output "dynamodb_conversations_table_name" {
-  description = "Name of the DynamoDB conversations table"
-  value       = aws_dynamodb_table.conversations.name
-}
-
-output "dynamodb_messages_table_name" {
-  description = "Name of the DynamoDB messages table"
-  value       = aws_dynamodb_table.messages.name
-}
-
-output "dynamodb_user_profiles_table_name" {
-  description = "Name of the DynamoDB user profiles table"
-  value       = aws_dynamodb_table.user_profiles.name
-}
-
-output "dynamodb_audit_logs_table_name" {
-  description = "Name of the DynamoDB audit logs table (append-only)"
+output "audit_logs_table_name" {
+  description = "Name of the audit logs DynamoDB table"
   value       = aws_dynamodb_table.audit_logs.name
+}
+
+output "distress_events_table_name" {
+  description = "Name of the distress events DynamoDB table"
+  value       = aws_dynamodb_table.distress_events.name
+}
+
+# ============================================================================
+# SQS Outputs
+# ============================================================================
+
+output "distress_alerts_queue_url" {
+  description = "URL of the distress alerts SQS queue"
+  value       = aws_sqs_queue.distress_alerts.url
+}
+
+output "distress_alerts_queue_arn" {
+  description = "ARN of the distress alerts SQS queue"
+  value       = aws_sqs_queue.distress_alerts.arn
+}
+
+output "distress_alerts_dlq_url" {
+  description = "URL of the distress alerts dead letter queue"
+  value       = aws_sqs_queue.distress_alerts_dlq.url
+}
+
+# ============================================================================
+# SES Outputs
+# ============================================================================
+
+output "ses_configuration_set_name" {
+  description = "Name of the SES configuration set for distress alerts"
+  value       = aws_ses_configuration_set.distress_alerts.name
 }
 

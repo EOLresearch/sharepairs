@@ -63,6 +63,7 @@ resource "aws_cognito_user_pool" "main" {
   username_attributes = ["email"]
 
   # Custom attributes for user profiles
+  # Note: Schema attributes cannot be modified after creation
   schema {
     attribute_data_type = "String"
     name                = "display_name"
@@ -89,6 +90,11 @@ resource "aws_cognito_user_pool" "main" {
     name                = "is_admin"
     required            = false
     mutable             = true
+  }
+
+  # Prevent Terraform from trying to modify schema (can't be changed after creation)
+  lifecycle {
+    ignore_changes = [schema]
   }
 
   # User pool configuration
