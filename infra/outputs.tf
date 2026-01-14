@@ -189,3 +189,16 @@ output "ses_configuration_set_name" {
   value       = aws_ses_configuration_set.distress_alerts.name
 }
 
+# ============================================================================
+# CloudWatch / SNS Outputs
+# ============================================================================
+
+output "sns_alerts_topic_arn" {
+  description = "ARN of the SNS topic for CloudWatch alarm notifications"
+  value       = aws_sns_topic.alerts.arn
+}
+
+output "sns_alerts_topic_name" {
+  description = "Name of the SNS topic for CloudWatch alarm notifications"
+  value       = aws_sns_topic.alerts.name
+}
