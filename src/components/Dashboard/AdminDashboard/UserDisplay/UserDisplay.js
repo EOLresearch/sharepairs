@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import UserCardFilterContainer from './UserCardFilterContainer/UserCardFilterContainer';
 import './userdisplay.css';
-import { updateMatch, removeMatch } from '../../../../helpers/firebasehelpers';
+import { updateMatch, removeMatch } from '../../../../services/matchService';
 import { KINSHIP_OPTIONS_EN } from '../../../../helpers/optionsArrays';
 
 function getMatchUidFromField(field) {
@@ -28,36 +28,44 @@ function UserDisplay({
   const [busy, setBusy] = useState(false);
 
   const unmatchedUsers = useMemo(
-    () => (Array.isArray(allUsers) ? allUsers.filter(u => !getMatchUidFromField(u.simpaticoMatch)) : []),
+    () =>
+      Array.isArray(allUsers)
+        ? allUsers.filter((u) => !getMatchUidFromField(u.simpaticoMatch))
+        : [],
     [allUsers]
   );
 
   const selectTheUser = useCallback((user) => setSelectedUser(user), []);
   const showSelectedUser = useCallback((_, boolean) => setHovered(boolean), []);
 
-  const getMatchBy = useCallback((uid, userCause, userKinship, type) => {
-    const preds = {
-      cause: (u) => u.cause === userCause && u.uid !== uid,
-      kinship: (u) => u.kinship === userKinship && u.uid !== uid,
-      both: (u) => u.cause === userCause && u.kinship === userKinship && u.uid !== uid,
-      none: (u) => u.cause !== userCause && u.kinship !== userKinship && u.uid !== uid,
-    };
-    const match = unmatchedUsers.find(preds[type]);
-    if (!match) return alert('No match available');
-    setSelectedUser(match);
-  }, [unmatchedUsers]);
+  const getMatchBy = useCallback(
+    (uid, userCause, userKinship, type) => {
+      const preds = {
+        cause: (u) => u.cause === userCause && u.uid !== uid,
+        kinship: (u) => u.kinship === userKinship && u.uid !== uid,
+        both: (u) =>
+          u.cause === userCause && u.kinship === userKinship && u.uid !== uid,
+        none: (u) =>
+          u.cause !== userCause && u.kinship !== userKinship && u.uid !== uid,
+      };
+      const match = unmatchedUsers.find(preds[type]);
+      if (!match) return alert('No match available');
+      setSelectedUser(match);
+    },
+    [unmatchedUsers]
+  );
 
   const setSimpaticoMatch = useCallback(async (useruid, selecteduid) => {
-    if (!useruid || !selecteduid) return alert("Both users must be selected.");
-    if (useruid === selecteduid) return alert("Cannot match a user with themselves.");
+    if (!useruid || !selecteduid) return alert('Both users must be selected.');
+    if (useruid === selecteduid)
+      return alert('Cannot match a user with themselves.');
     try {
       setBusy(true);
       await updateMatch(useruid, selecteduid);
       setHovered(false);
-      // live snapshot will refresh cards
     } catch (err) {
-      console.error("Failed to set match:", err);
-      alert("Match failed. Try again.");
+      console.error('Failed to set match:', err);
+      alert('Match failed. Try again.');
     } finally {
       setBusy(false);
     }
@@ -79,24 +87,41 @@ function UserDisplay({
     }
   }, []);
 
-  const filterHandler = useCallback((filterCondition) => {
-    const actions = {
-      'All': () => { setKinshipFilter('All'); setCauseFilter('All'); },
-      'Natural': () => setCauseFilter('Natural'),
-      'Unnatural': () => setCauseFilter('Unnatural'),
-      'Kinship': () => setShowKinshipFilters(prev => !prev),
-      default: () => setKinshipFilter(filterCondition)
-    };
-    (actions[filterCondition] || actions.default)();
-  }, [setCauseFilter, setKinshipFilter, setShowKinshipFilters]);
+  const filterHandler = useCallback(
+    (filterCondition) => {
+      const actions = {
+        All: () => {
+          setKinshipFilter('All');
+          setCauseFilter('All');
+        },
+        Natural: () => setCauseFilter('Natural'),
+        Unnatural: () => setCauseFilter('Unnatural'),
+        Kinship: () => setShowKinshipFilters((prev) => !prev),
+        default: () => setKinshipFilter(filterCondition),
+      };
+      (actions[filterCondition] || actions.default)();
+    },
+    [setCauseFilter, setKinshipFilter, setShowKinshipFilters]
+  );
 
   return (
     <div className="user-display-container">
-      <div className='user-display-header'>
-        <div className='user-display-cause-selections'>
-          {['Kinship', 'Natural', 'Unnatural', 'All'].map(filter => (
-            <button key={filter} onClick={() => { filterHandler(filter); setKinshipFilter('All'); }} disabled={busy}>
-              {filter === 'Kinship' ? (showKinshipFilters ? 'Hide Filters' : 'Show Filters') : filter}
+      <div className="user-display-header">
+        <div className="user-display-cause-selections">
+          {['Kinship', 'Natural', 'Unnatural', 'All'].map((filter) => (
+            <button
+              key={filter}
+              onClick={() => {
+                filterHandler(filter);
+                setKinshipFilter('All');
+              }}
+              disabled={busy}
+            >
+              {filter === 'Kinship'
+                ? showKinshipFilters
+                  ? 'Hide Filters'
+                  : 'Show Filters'
+                : filter}
             </button>
           ))}
         </div>
@@ -105,20 +130,51 @@ function UserDisplay({
       <div className="user-display-body">
         {showKinshipFilters && (
           <div className="kinship-selections">
-            <div className='filter-labels-container'>
-              <span>Cause: <span>{causeFilter}</span></span>
-              <button onClick={handleExportCSV} className="admin-export-button" disabled={busy}>
+            <div className="filter-labels-container">
+              <span>
+                Cause: <span>{causeFilter}</span>
+              </span>
+              <button
+                onClick={handleExportCSV}
+                className="admin-export-button"
+                disabled={busy}
+              >
                 Export Filtered User Data to CSV
               </button>
-              <span>Kinship: <span>{kinshipFilter}</span></span>
+              <span>
+                Kinship: <span>{kinshipFilter}</span>
+              </span>
             </div>
-            <div className='double-btn-container'>
-              {KINSHIP_OPTIONS_EN.map(kinship => (
-                <div key={kinship} className='double-btn'>
-                  <span onClick={() => { filterHandler(kinship); setCauseFilter("All"); }}>{kinship}</span>
-                  <div className='sub-btn-container'>
-                    <button onClick={() => { setCauseFilter('Natural'); setKinshipFilter(kinship); }} disabled={busy}>N</button>
-                    <button onClick={() => { setCauseFilter('Unnatural'); setKinshipFilter(kinship); }} disabled={busy}>U</button>
+            <div className="double-btn-container">
+              {KINSHIP_OPTIONS_EN.map((kinship) => (
+                <div key={kinship} className="double-btn">
+                  <span
+                    onClick={() => {
+                      filterHandler(kinship);
+                      setCauseFilter('All');
+                    }}
+                  >
+                    {kinship}
+                  </span>
+                  <div className="sub-btn-container">
+                    <button
+                      onClick={() => {
+                        setCauseFilter('Natural');
+                        setKinshipFilter(kinship);
+                      }}
+                      disabled={busy}
+                    >
+                      N
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCauseFilter('Unnatural');
+                        setKinshipFilter(kinship);
+                      }}
+                      disabled={busy}
+                    >
+                      U
+                    </button>
                   </div>
                 </div>
               ))}

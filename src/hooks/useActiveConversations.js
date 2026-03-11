@@ -1,24 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  collection,
-  query,
-  where,
-  onSnapshot
-} from 'firebase/firestore';
-import { db } from '../fb'
+import { getConversations } from '../services/matchService';
 
+const POLL_MS = 5000;
 
 /**
- * Hook to listen for active (mutually-consented) conversations in real-time.
+ * Hook to poll for active (mutually-consented) conversations.
  * Calls onConsentAccepted exactly once per newly activated conversation.
- *
- * @param {string} authId - Current user's UID
- * @param {function} onConsentAccepted - Callback invoked with conversation data
- * @returns {{ conversations: Array }}
  */
 export default function useActiveConversations(authId, onConsentAccepted) {
   const [conversations, setConversations] = useState([]);
-  // Keep track of which convo IDs we've already notified
   const notifiedRef = useRef(new Set());
 
   useEffect(() => {
@@ -27,37 +17,31 @@ export default function useActiveConversations(authId, onConsentAccepted) {
       return;
     }
 
-    const conversationsQuery = query(
-      collection(db, 'conversations'),
-      where('users', 'array-contains', authId),
-      where('mutualConsent', '==', true)
-    );
+    const poll = async () => {
+      try {
+        const list = await getConversations();
+        const active = Array.isArray(list)
+          ? list.filter((c) => c.mutualConsent)
+          : [];
+        setConversations(active);
 
-    const unsubscribe = onSnapshot(
-      conversationsQuery,
-      snapshot => {
-        const active = [];
-        snapshot.forEach(doc => {
-          const convo = { ...doc.data(), docID: doc.id };
-          active.push(convo);
-
-          // If this convo is newly activated, call the callback once
-          if (!notifiedRef.current.has(convo.docID)) {
-            notifiedRef.current.add(convo.docID);
+        active.forEach((convo) => {
+          const id = convo.docID || convo.cid || convo.id;
+          if (id && !notifiedRef.current.has(id)) {
+            notifiedRef.current.add(id);
             if (typeof onConsentAccepted === 'function') {
-              onConsentAccepted(convo);
+              onConsentAccepted({ ...convo, docID: id });
             }
           }
         });
-
-        setConversations(active);
-      },
-      error => {
-        console.error('❌ listenActiveConversations failed:', error);
+      } catch (err) {
+        console.error('useActiveConversations poll failed:', err);
       }
-    );
+    };
 
-    return () => unsubscribe();
+    poll();
+    const interval = setInterval(poll, POLL_MS);
+    return () => clearInterval(interval);
   }, [authId, onConsentAccepted]);
 
   return { conversations };

@@ -1,29 +1,30 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { collection, onSnapshot, orderBy, limit, query, getDocs, startAfter } from 'firebase/firestore';
-import { db } from '../../fb';
+import { getMessages, fetchOlderMessages } from '../../services/messageService';
 
 const DEFAULT_PAGE_SIZE = 50;
-const toLocal = (ts) => ts?.toDate?.()?.toLocaleString?.() || '';
+const POLL_MS = 4000;
+const toLocal = (ts) => {
+  if (ts?.toDate?.().toLocaleString) return ts.toDate().toLocaleString();
+  if (ts?.seconds != null) return new Date(ts.seconds * 1000).toLocaleString();
+  if (ts && typeof ts === 'object' && ts._seconds != null)
+    return new Date(ts._seconds * 1000).toLocaleString();
+  return '';
+};
 
-/**
- * Read-only message viewer for a conversation.
- * Props:
- *  - convoId (string, required)
- *  - usersById (object map uid -> {displayName}, optional)
- *  - onClose (fn, optional)
- *  - pageSize (number, optional)
- *  - notify (fn(type,msg), optional)
- */
-export default function ConvoViewer({ convoId, usersById = {}, onClose, pageSize = DEFAULT_PAGE_SIZE, notify }) {
+export default function ConvoViewer({
+  convoId,
+  usersById = {},
+  onClose,
+  pageSize = DEFAULT_PAGE_SIZE,
+  notify,
+}) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [olderLoading, setOlderLoading] = useState(false);
-  const [messagesAsc, setMessagesAsc] = useState([]); // ascending by time
-  const [oldestCursor, setOldestCursor] = useState(null); // last doc of the DESC page
+  const [messagesAsc, setMessagesAsc] = useState([]);
+  const [oldestCursor, setOldestCursor] = useState(null);
   const [reachedBeginning, setReachedBeginning] = useState(false);
+  const pollRef = useRef(null);
 
-  const unsubRef = useRef(null);
-
-  // Reset when convo changes
   useEffect(() => {
     setInitialLoading(true);
     setOlderLoading(false);
@@ -33,37 +34,31 @@ export default function ConvoViewer({ convoId, usersById = {}, onClose, pageSize
 
     if (!convoId) return;
 
-    // Live subscription to the newest window (DESC, limited)
-    const qLatest = query(
-      collection(db, 'conversations', convoId, 'messages'),
-      orderBy('createdAt', 'desc'),
-      limit(pageSize)
-    );
-
-    const unsub = onSnapshot(
-      qLatest,
-      (snap) => {
-        const desc = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        // Track cursor (oldest in this page = last doc)
-        const lastDoc = snap.docs[snap.docs.length - 1] || null;
-        setOldestCursor(lastDoc);
-        // Render ascending
-        setMessagesAsc(desc.slice().reverse());
-        setInitialLoading(false);
-        // If fewer than pageSize, we hit the beginning
-        if (snap.size < pageSize) setReachedBeginning(true);
-      },
-      (err) => {
-        console.error('ConvoViewer onSnapshot failed:', err);
+    const load = async () => {
+      try {
+        const list = await getMessages(convoId);
+        const msgs = Array.isArray(list) ? list : [];
+        const byNewest = [...msgs].sort((a, b) => {
+          const ta = a.createdAt?.seconds ?? a.createdAt?._seconds ?? 0;
+          const tb = b.createdAt?.seconds ?? b.createdAt?._seconds ?? 0;
+          return tb - ta;
+        });
+        const window = byNewest.slice(0, pageSize);
+        setMessagesAsc([...window].reverse());
+        setOldestCursor(window.length ? window[window.length - 1] : null);
+        setReachedBeginning(byNewest.length < pageSize);
+      } catch (err) {
+        console.error('ConvoViewer load failed:', err);
         notify?.('Failed to load messages.', 'error');
+      } finally {
         setInitialLoading(false);
       }
-    );
+    };
 
-    unsubRef.current = unsub;
+    load();
+    pollRef.current = setInterval(load, POLL_MS);
     return () => {
-      unsubRef.current?.();
-      unsubRef.current = null;
+      if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [convoId, pageSize, notify]);
 
@@ -71,25 +66,17 @@ export default function ConvoViewer({ convoId, usersById = {}, onClose, pageSize
     if (!convoId || !oldestCursor || olderLoading || reachedBeginning) return;
     setOlderLoading(true);
     try {
-      const qOlder = query(
-        collection(db, 'conversations', convoId, 'messages'),
-        orderBy('createdAt', 'desc'),
-        startAfter(oldestCursor),
-        limit(pageSize)
+      const cursor =
+        oldestCursor.id ?? oldestCursor.mid ?? oldestCursor.createdAt?.seconds ?? oldestCursor.createdAt?._seconds;
+      const { messages: olderMessages, lastDoc, hasMore } = await fetchOlderMessages(
+        convoId,
+        cursor,
+        pageSize
       );
-      const snap = await getDocs(qOlder);
-      const desc = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const olderAsc = desc.slice().reverse();
-
-      // Prepend olderAsc to current ascending list
+      const olderAsc = Array.isArray(olderMessages) ? olderMessages : [];
       setMessagesAsc((curr) => [...olderAsc, ...curr]);
-
-      // Advance cursor
-      const lastDoc = snap.docs[snap.docs.length - 1] || null;
       setOldestCursor(lastDoc);
-
-      // If fewer than a full page came back, we reached the beginning
-      if (snap.size < pageSize) setReachedBeginning(true);
+      if (!hasMore) setReachedBeginning(true);
     } catch (err) {
       console.error('ConvoViewer loadOlder failed:', err);
       notify?.('Failed to load older messages.', 'error');
@@ -107,8 +94,9 @@ export default function ConvoViewer({ convoId, usersById = {}, onClose, pageSize
     return messagesAsc.map((m) => {
       const text = m.text ?? m.body ?? m.content ?? '';
       const when = toLocal(m.createdAt) || toLocal(m.updatedAt) || '';
+      const id = m.id ?? m.mid;
       return {
-        id: m.id,
+        id,
         who: renderSender(m.sentFromUid || m.uid || m.senderUid),
         when,
         text,
@@ -117,44 +105,86 @@ export default function ConvoViewer({ convoId, usersById = {}, onClose, pageSize
   }, [messagesAsc, renderSender]);
 
   return (
-    <div className="convo-viewer" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderBottom: '1px solid #eee' }}>
+    <div
+      className="convo-viewer"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 10px',
+          borderBottom: '1px solid #eee',
+        }}
+      >
         <strong style={{ flex: 1 }}>Conversation: {convoId || '—'}</strong>
         {onClose && (
-          <button onClick={onClose} style={{ padding: '6px 10px' }}>Close</button>
+          <button onClick={onClose} style={{ padding: '6px 10px' }}>
+            Close
+          </button>
         )}
       </div>
 
-      {/* Body */}
       <div style={{ flex: 1, overflow: 'auto', padding: 10 }}>
         {initialLoading ? (
           <div style={{ color: '#777' }}>Loading messages…</div>
         ) : (
           <>
-            <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'center' }}>
+            <div
+              style={{
+                marginBottom: 10,
+                display: 'flex',
+                justifyContent: 'center',
+              }}
+            >
               <button
                 onClick={loadOlder}
                 disabled={olderLoading || reachedBeginning}
                 style={{ padding: '6px 10px' }}
               >
-                {reachedBeginning ? 'No older messages' : (olderLoading ? 'Loading…' : 'Load older')}
+                {reachedBeginning
+                  ? 'No older messages'
+                  : olderLoading
+                    ? 'Loading…'
+                    : 'Load older'}
               </button>
             </div>
 
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {rows.map((r) => (
-                <li key={r.id} style={{ padding: '8px 10px', borderBottom: '1px solid #f3f3f3' }}>
-                  <div style={{ fontSize: 12, color: '#555', marginBottom: 4 }}>
+                <li
+                  key={r.id}
+                  style={{
+                    padding: '8px 10px',
+                    borderBottom: '1px solid #f3f3f3',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: '#555',
+                      marginBottom: 4,
+                    }}
+                  >
                     <strong>{r.who}</strong> • <span>{r.when}</span>
                   </div>
-                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                    {r.text || <em style={{ color: '#888' }}>[no text]</em>}
+                  <div
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                    }}
+                  >
+                    {r.text || (
+                      <em style={{ color: '#888' }}>[no text]</em>
+                    )}
                   </div>
                 </li>
               ))}
               {!rows.length && (
-                <li style={{ padding: 12, color: '#777' }}>No messages yet.</li>
+                <li style={{ padding: 12, color: '#777' }}>
+                  No messages yet.
+                </li>
               )}
             </ul>
           </>

@@ -42,13 +42,30 @@ export async function putItem(tableName, item) {
 }
 
 /**
- * Update an item in DynamoDB
+ * Update an item in DynamoDB (replace attributes by key).
+ * updates: plain object of attribute names to values.
  */
 export async function updateItem(tableName, key, updates) {
+  const names = {};
+  const values = {};
+  const setParts = [];
+  let i = 0;
+  for (const [k, v] of Object.entries(updates)) {
+    const n = `#a${i}`;
+    const vn = `:v${i}`;
+    names[n] = k;
+    values[vn] = v;
+    setParts.push(`${n} = ${vn}`);
+    i++;
+  }
+  if (setParts.length === 0) return (await getItem(tableName, key)) || null;
   const command = new UpdateCommand({
     TableName: tableName,
     Key: key,
-    ...updates
+    UpdateExpression: 'SET ' + setParts.join(', '),
+    ExpressionAttributeNames: names,
+    ExpressionAttributeValues: values,
+    ReturnValues: 'ALL_NEW',
   });
   const response = await docClient.send(command);
   return response.Attributes;

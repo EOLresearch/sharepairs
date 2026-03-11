@@ -1,12 +1,8 @@
 import { useState, useEffect } from 'react';
-import { db } from '../fb';
-import {
-  collection,
-  query,
-  where,
-  onSnapshot
-} from 'firebase/firestore';
-import { acceptConversationRequest } from '../helpers/firebasehelpers-telemetry';
+import { getConversations } from '../services/matchService';
+import { respondToConsent } from '../services/consentService';
+
+const POLL_MS = 5000;
 
 export default function useIncomingRequests(authId) {
   const [incomingRequests, setIncomingRequests] = useState([]);
@@ -17,43 +13,29 @@ export default function useIncomingRequests(authId) {
       return;
     }
 
-    const q = query(
-      collection(db, 'conversations'),
-      where('users', 'array-contains', authId),
-      where('mutualConsent', '==', false)
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      snapshot => {
-        const pending = [];
-        snapshot.forEach(doc => {
-          const data = { ...doc.data(), docID: doc.id };
-
-          // client-side filter: haven’t already consented
-          if (
-            !Array.isArray(data.consentGivenBy) ||
-            !data.consentGivenBy.includes(authId)
-          ) {
-            pending.push(data);
-          }
-        });
-
-        console.log('[useIncomingRequests] pending:', pending);
-        setIncomingRequests(pending);
-      },
-      err => {
-        console.error('[useIncomingRequests] snapshot error:', err);
+    const poll = async () => {
+      try {
+        const list = await getConversations();
+        const consentBy = (c) => c.consentBy ?? c.consentGivenBy;
+        const pending = (Array.isArray(list) ? list : []).filter(
+          (c) =>
+            !c.mutualConsent &&
+            (!Array.isArray(consentBy(c)) || !consentBy(c).includes(authId))
+        );
+        setIncomingRequests(pending.map((c) => ({ ...c, docID: c.docID || c.cid || c.id })));
+      } catch (err) {
+        console.error('[useIncomingRequests] poll error:', err);
       }
-    );
+    };
 
-    return unsubscribe;
+    poll();
+    const interval = setInterval(poll, POLL_MS);
+    return () => clearInterval(interval);
   }, [authId]);
 
-  const acceptRequest = async requestId => {
+  const acceptRequest = async (requestId) => {
     try {
-      console.log('[useIncomingRequests] accepting', requestId);
-      await acceptConversationRequest(requestId, authId);
+      await respondToConsent(requestId, true);
     } catch (err) {
       console.error('[useIncomingRequests] accept error:', err);
     }

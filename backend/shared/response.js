@@ -1,38 +1,21 @@
-/**
- * Standardized API response helpers
- */
+import { withCors } from './cors.js';
 
+/**
+ * Standardized API response helpers (with CORS)
+ */
 export function success(data, statusCode = 200) {
-  return {
+  return withCors({
     statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
-    },
-    body: JSON.stringify(data)
-  };
+    body: JSON.stringify(data),
+  });
 }
 
 export function error(message, statusCode = 400, details = null) {
-  const response = {
-    error: message
-  };
-  
-  if (details) {
-    response.details = details;
-  }
-
-  return {
+  const body = { error: message };
+  if (details) body.details = details;
+  return withCors({
     statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
-    },
-    body: JSON.stringify(response)
-  };
+    body: JSON.stringify(body),
+  });
 }
 

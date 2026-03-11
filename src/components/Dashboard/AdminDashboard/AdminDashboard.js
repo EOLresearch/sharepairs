@@ -2,10 +2,8 @@ import './admindashboard.css';
 import UserDisplay from './UserDisplay/UserDisplay';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAuth } from '../../UserAuth/AuthContext';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../../fb';
+import { getAllUsers, getAllConversations } from '../../../services/matchService';
 import Papa from 'papaparse';
-import { getAllConversations } from '../../../helpers/firebasehelpers';
 
 function filterUsers(users, causeFilter, kinshipFilter) {
   if (!Array.isArray(users)) return [];
@@ -27,21 +25,19 @@ function AdminDashboard({ userData, navHandler }) {
   const [showKinshipFilters, setShowKinshipFilters] = useState(true);
   const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
-  // redirect non-admins out
   useEffect(() => {
     if (user && !userData?.admin) navHandler?.('Home');
   }, [user, userData, navHandler]);
 
-  // live subscribe to users
   useEffect(() => {
     if (!userData?.admin) return;
     setIsLoadingUsers(true);
-    const unsub = onSnapshot(collection(db, 'users'), (snap) => {
-      const users = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
-      setAllUsers(users);
-      setIsLoadingUsers(false);
-    }, () => setIsLoadingUsers(false));
-    return () => unsub();
+    getAllUsers()
+      .then((users) => {
+        setAllUsers(Array.isArray(users) ? users : []);
+        setIsLoadingUsers(false);
+      })
+      .catch(() => setIsLoadingUsers(false));
   }, [userData?.admin]);
 
   const filteredUsers = useMemo(
@@ -54,20 +50,20 @@ function AdminDashboard({ userData, navHandler }) {
       alert('No users to export.');
       return;
     }
-    const exportData = filteredUsers.map(user => {
+    const exportData = filteredUsers.map((user) => {
       const { simpaticoMatch, contacts, createdAt, updatedAt, ...rest } = user || {};
       const matchName =
         typeof simpaticoMatch === 'string'
           ? simpaticoMatch
-          : (simpaticoMatch?.displayName || simpaticoMatch?.uid || '');
+          : simpaticoMatch?.displayName || simpaticoMatch?.uid || '';
       return {
         ...rest,
         simpaticoMatch: matchName,
         contacts: Array.isArray(contacts)
-          ? contacts.map(c => `${c.displayName || 'Unknown'} (${c.authId || c.uid || 'no-id'})`).join(', ')
+          ? contacts.map((c) => `${c.displayName || 'Unknown'} (${c.authId || c.uid || 'no-id'})`).join(', ')
           : '',
-        createdAt: createdAt?.toDate?.().toLocaleString?.() || '',
-        updatedAt: updatedAt?.toDate?.().toLocaleString?.() || '',
+        createdAt: typeof createdAt?.toDate === 'function' ? createdAt.toDate().toLocaleString() : String(createdAt ?? ''),
+        updatedAt: typeof updatedAt?.toDate === 'function' ? updatedAt.toDate().toLocaleString() : String(updatedAt ?? ''),
       };
     });
     const csv = Papa.unparse(exportData);
@@ -85,11 +81,12 @@ function AdminDashboard({ userData, navHandler }) {
   const handleExportConversations = useCallback(async () => {
     try {
       const conversations = await getAllConversations();
-      if (!conversations?.length) {
+      const list = Array.isArray(conversations) ? conversations : [];
+      if (!list.length) {
         alert('No conversations found.');
         return;
       }
-      const exportData = conversations.map(convo => {
+      const exportData = list.map((convo) => {
         const { createdAt, updatedAt, users, lastSeen, consentGivenBy, ...rest } = convo || {};
         return {
           ...rest,
@@ -97,8 +94,8 @@ function AdminDashboard({ userData, navHandler }) {
           users: Array.isArray(users) ? users.join(', ') : '',
           consentGivenBy: Array.isArray(consentGivenBy) ? consentGivenBy.join(', ') : '',
           lastSeen: lastSeen ? JSON.stringify(lastSeen) : '',
-          createdAt: createdAt?.toDate?.().toLocaleString?.() || '',
-          updatedAt: updatedAt?.toDate?.().toLocaleString?.() || '',
+          createdAt: typeof createdAt?.toDate === 'function' ? createdAt.toDate().toLocaleString() : String(createdAt ?? ''),
+          updatedAt: typeof updatedAt?.toDate === 'function' ? updatedAt.toDate().toLocaleString() : String(updatedAt ?? ''),
         };
       });
       const csv = Papa.unparse(exportData);
@@ -112,15 +109,15 @@ function AdminDashboard({ userData, navHandler }) {
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
-      console.error('❌ Error exporting conversations:', err);
+      console.error('Error exporting conversations:', err);
       alert('Export failed. See console for details.');
     }
   }, []);
 
   return (
-    <div className='admin-dashboard-container'>
-      <div className='admin-dashboard'>
-        <div className='admin-dashboard-header'>
+    <div className="admin-dashboard-container">
+      <div className="admin-dashboard">
+        <div className="admin-dashboard-header">
           <button disabled className="admin-load-button">
             {isLoadingUsers ? 'Loading…' : 'Live'}
           </button>
@@ -132,7 +129,7 @@ function AdminDashboard({ userData, navHandler }) {
           </button>
         </div>
 
-        <div className='admin-dashboard-body'>
+        <div className="admin-dashboard-body">
           <UserDisplay
             users={filteredUsers}
             allUsers={allUsers}

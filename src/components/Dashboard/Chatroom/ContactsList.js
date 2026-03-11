@@ -1,10 +1,12 @@
 import React from 'react';
-import { RxCaretRight } from "react-icons/rx";
+import { RxCaretRight } from 'react-icons/rx';
 import { IconContext } from 'react-icons';
 import sharepairImg from '../../../assets/eardpairtransparentbg.png';
 import supportImg from '../../../assets/simpaticologogreenbg.jpg';
-import { createSupportConvoIfMissing, getSupportConvoIfExists } from '../../../helpers/firebasehelpers'; // 👈 added
-// If you already export SUPPORT_UID you can import it too, not required here.
+import {
+  createSupportConvoIfMissing,
+  getSupportConvoIfExists,
+} from '../../../services/matchService';
 
 export default function ContactsList({
   contacts,
@@ -14,7 +16,7 @@ export default function ContactsList({
   setShowDistressThermometer,
   activeConvo = [],
   onRequestSent,
-  setSystemMessage
+  setSystemMessage,
 }) {
   const getImage = (type, photoURL) => {
     if (type === 'sharepair') return sharepairImg;
@@ -22,10 +24,8 @@ export default function ContactsList({
     return photoURL || supportImg;
   };
 
-  // Open existing Support conversation if present; otherwise ask to create
   const handleSupportClick = async () => {
     try {
-      // 1) Try to find an existing support thread
       const existing = await getSupportConvoIfExists(userData.authId);
       if (existing) {
         setActiveConversation(existing);
@@ -33,51 +33,50 @@ export default function ContactsList({
         return;
       }
 
-      // 2) No existing convo — ask before creating
       setSystemMessage?.({
-        type: "confirm",
-        message: "Do you want to start a conversation with support?",
-        actionLabel: "Yes",
+        type: 'confirm',
+        message: 'Do you want to start a conversation with support?',
+        actionLabel: 'Yes',
         action: async () => {
           try {
             const convo = await createSupportConvoIfMissing(userData.authId);
             setActiveConversation(convo);
             setShowDistressThermometer?.(false);
           } catch (e) {
-            console.error("support convo failed:", e);
+            console.error('support convo failed:', e);
             setSystemMessage({
-              type: "alert",
-              message: "Couldn’t start a support conversation. Please try again."
+              type: 'alert',
+              message: "Couldn't start a support conversation. Please try again.",
             });
             return;
           } finally {
             setSystemMessage(null);
           }
-        }
+        },
       });
     } catch (e) {
-      console.error("support check failed:", e);
+      console.error('support check failed:', e);
       setSystemMessage?.({
-        type: "alert",
-        message: "Couldn’t check your support conversation. Please try again."
+        type: 'alert',
+        message: "Couldn't check your support conversation. Please try again.",
       });
     }
   };
 
   const handleContactClick = (contact) => {
-    if (contact.type === "support") {
+    if (contact.type === 'support') {
       return handleSupportClick();
     }
     onContactClick(contact);
   };
 
   return (
-    <IconContext.Provider value={{ className: "react-icons-contacts" }}>
+    <IconContext.Provider value={{ className: 'react-icons-contacts' }}>
       <div className="contacts-list">
         {contacts.map((contact) => {
           const contactUid = contact.uid || contact.authId;
           const isMutuallyConsented = activeConvo.some(
-            c => c.users?.includes(contactUid) && c.mutualConsent
+            (c) => c.users?.includes(contactUid) && c.mutualConsent
           );
 
           return (

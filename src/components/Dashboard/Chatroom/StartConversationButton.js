@@ -1,5 +1,5 @@
 import React from 'react';
-import { createConversation } from '../../../helpers/firebasehelpers';
+import { createConversation } from '../../../services/matchService';
 import en from '../../../translations/en';
 import tr from '../../../translations/tr';
 
@@ -11,15 +11,18 @@ export default function StartConversationButton({
   setActiveConversation,
   setShowDistressThermometer,
   setSystemMessage,
-  language
+  language,
 }) {
   const t = language === 'tr' ? tr : en;
   const myUid = currentUser?.authId || currentUser?.uid;
   const otherUid = contact?.uid;
 
-  // existing conversation with this contact?
-  const existing = conversations.find(c => Array.isArray(c.users) && c.users.includes(otherUid));
-  const isActive = !!(activeConversation?.users && activeConversation.users.includes(otherUid));
+  const existing = conversations.find(
+    (c) => Array.isArray(c.users) && c.users.includes(otherUid)
+  );
+  const isActive = !!(
+    activeConversation?.users && activeConversation.users.includes(otherUid)
+  );
 
   const handleClick = async () => {
     if (!myUid || !otherUid) return;
@@ -41,10 +44,7 @@ export default function StartConversationButton({
 
     try {
       const result = await createConversation(myUid, otherUid);
-      // Support both shapes:
-      // - old: { conversation: {...} }
-      // - new: { docID, users, ... }
-      const convo = result?.conversation || result;
+      const convo = result?.conversation ?? result;
 
       if (!convo) throw new Error('No conversation returned');
 
@@ -60,7 +60,7 @@ export default function StartConversationButton({
       setActiveConversation({ ...convo, otherUserUid: otherUid });
       setShowDistressThermometer?.(true);
     } catch (err) {
-      console.error('❌ Failed to create or fetch conversation:', err?.message || err);
+      console.error('Failed to create or fetch conversation:', err?.message || err);
       setSystemMessage({
         message: t.convo_btn.error.replace('{name}', contact.displayName),
         type: 'alert',
@@ -69,7 +69,6 @@ export default function StartConversationButton({
     }
   };
 
-  // Button label/state
   let label = t.convo_btn.request;
   let disabled = false;
 
