@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { listenToUserConversations, acceptConversationRequest } from '../helpers/firebasehelpers-telemetry';
+import { listenToConversations } from '../services/matchService';
+import { respondToConsent } from '../services/consentService';
 
 export default function useConversations(authId, userData, pendingConsentId, onConsentAccepted) {
   const [conversations, setConversations] = useState([]);
@@ -7,24 +8,26 @@ export default function useConversations(authId, userData, pendingConsentId, onC
 
   useEffect(() => {
     if (!authId || !userData) return;
-    const unsubscribe = listenToUserConversations(authId, convos => {
+    const unsubscribe = listenToConversations((convos) => {
       setConversations(convos);
 
       if (pendingConsentId) {
-        const activated = convos.find(c => c.docID === pendingConsentId && c.mutualConsent);
+        const activated = convos.find((c) => c.docID === pendingConsentId && c.mutualConsent);
         if (activated) onConsentAccepted(activated);
       }
 
+      const consentBy = (c) => c.consentBy ?? c.consentGivenBy;
       setIncomingRequests(
-        convos.filter(c => !c.mutualConsent && !c.consentBy?.includes(authId))
+        convos.filter(
+          (c) => !c.mutualConsent && !(Array.isArray(consentBy(c)) && consentBy(c).includes(authId))
+        )
       );
     });
     return unsubscribe;
   }, [authId, userData, pendingConsentId, onConsentAccepted]);
 
-  // Optional: encapsulate the accept flow here instead of in Chatroom
   const acceptRequest = (requestId) =>
-    acceptConversationRequest(requestId, authId).catch(console.error);
+    respondToConsent(requestId, true).catch(console.error);
 
   return { conversations, incomingRequests, acceptRequest };
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { updateUserProfile } from '../helpers/firebasehelpers-telemetry';
+import { updateUserProfile } from '../services/authService';
 
 export default function useMatchAlert(authId, userData, showWelcome) {
   const [hasShown, setHasShown] = useState(false);
@@ -8,7 +8,9 @@ export default function useMatchAlert(authId, userData, showWelcome) {
     if (showWelcome || !userData) return;
     const matched = Boolean(userData.simpaticoMatch);
     if (matched && !hasShown && !userData.hasSeenMatch) {
-      alert('🎉 You have been matched! View the contacts panel to see your new match.');
+      alert(
+        '🎉 You have been matched! View the contacts panel to see your new match.'
+      );
       setHasShown(true);
       updateUserProfile(authId, { hasSeenMatch: true }).catch(console.error);
     }

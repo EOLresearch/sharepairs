@@ -1,16 +1,15 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { collection, onSnapshot, orderBy, limit, query } from 'firebase/firestore';
-import { db } from '../../fb';
+import { getAllUsers } from '../../services/matchService';
 import { KINSHIP_OPTIONS_EN } from '../../helpers/optionsArrays';
 import { pairUsers, unpairUsers, toggleChat } from '../actions/adminActions';
 
-const PAGE_LIMIT = 500;
+const POLL_MS = 5000;
 const CAUSE_OPTIONS = ['All', 'Natural', 'Unnatural'];
 const KINSHIP_OPTIONS = ['All', ...KINSHIP_OPTIONS_EN];
 
 const getMatchUid = (v) => {
   if (!v) return null;
-  if (typeof v === 'string') return v;
+  if (typeof v === 'string') return v || null;
   if (typeof v === 'object') return v.uid || v.authId || null;
   return null;
 };
@@ -31,12 +30,11 @@ export default function UsersTab({ notify, confirm, userData }) {
   const [isLoading, setIsLoading] = useState(true);
   const [users, setUsers] = useState([]);
 
-  // Filters (all client-side)
   const [search, setSearch] = useState('');
   const [causeFilter, setCauseFilter] = useState('All');
   const [kinshipFilter, setKinshipFilter] = useState('All');
-  const [chatFilter, setChatFilter] = useState('any');       // 'any' | 'enabled' | 'disabled'
-  const [matchFilter, setMatchFilter] = useState('any');     // 'any' | 'matched' | 'unmatched'
+  const [chatFilter, setChatFilter] = useState('any');
+  const [matchFilter, setMatchFilter] = useState('any');
 
   const [selectedUid, setSelectedUid] = useState(null);
   const selectedUser = useMemo(
@@ -44,43 +42,39 @@ export default function UsersTab({ notify, confirm, userData }) {
     [users, selectedUid]
   );
 
-  // Matching picker state (inside drawer)
   const [partnerQuery, setPartnerQuery] = useState('');
   const [partnerUid, setPartnerUid] = useState(null);
 
-  // Live users list
   useEffect(() => {
     if (!userData?.admin) return;
     setIsLoading(true);
 
-    const q = query(
-      collection(db, 'users'),
-      orderBy('createdAt', 'desc'),
-      limit(PAGE_LIMIT)
-    );
-
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
-        const rows = snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
-        setUsers(rows);
-        setIsLoading(false);
-      },
-      (err) => {
-        console.error('onSnapshot(users) failed:', err);
+    const poll = async () => {
+      try {
+        const list = await getAllUsers();
+        const rows = Array.isArray(list) ? list : [];
+        setUsers([...rows].sort((a, b) => {
+          const at = b.createdAt?.seconds ?? b.createdAt?._seconds ?? 0;
+          const bt = a.createdAt?.seconds ?? a.createdAt?._seconds ?? 0;
+          return at - bt;
+        }).slice(0, 500));
+      } catch (err) {
+        console.error('UsersTab load failed:', err);
         notify?.('Failed to load users.', 'error');
+      } finally {
         setIsLoading(false);
       }
-    );
-    return () => unsub();
+    };
+
+    poll();
+    const interval = setInterval(poll, POLL_MS);
+    return () => clearInterval(interval);
   }, [userData?.admin, notify]);
 
-  // Derived: apply filters + search
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
 
     return users.filter((u) => {
-      // search: name, email, uid
       const inSearch =
         !s ||
         u.uid?.toLowerCase?.().includes(s) ||
@@ -89,19 +83,17 @@ export default function UsersTab({ notify, confirm, userData }) {
 
       if (!inSearch) return false;
 
-      // cause/kinship
       const causeOk = causeFilter === 'All' || (u.cause || '') === causeFilter;
-      const kinOk = kinshipFilter === 'All' || (u.kinship || '') === kinshipFilter;
+      const kinOk =
+        kinshipFilter === 'All' || (u.kinship || '') === kinshipFilter;
       if (!causeOk || !kinOk) return false;
 
-      // chat
       if (chatFilter !== 'any') {
         const isDisabled = !!u.chatDisabled;
         if (chatFilter === 'enabled' && isDisabled) return false;
         if (chatFilter === 'disabled' && !isDisabled) return false;
       }
 
-      // match
       const m = getMatchUid(u.simpaticoMatch);
       if (matchFilter === 'matched' && !m) return false;
       if (matchFilter === 'unmatched' && m) return false;
@@ -110,7 +102,6 @@ export default function UsersTab({ notify, confirm, userData }) {
     });
   }, [users, search, causeFilter, kinshipFilter, chatFilter, matchFilter]);
 
-  // Partner candidates (exclude self)
   const partnerCandidates = useMemo(() => {
     const q = partnerQuery.trim().toLowerCase();
     return users
@@ -126,12 +117,14 @@ export default function UsersTab({ notify, confirm, userData }) {
       .slice(0, 12);
   }, [users, partnerQuery, selectedUid]);
 
-  // Actions
   const doToggleChat = useCallback(
     async (user) => {
       try {
         await toggleChat(user.uid, !user.chatDisabled);
-        notify?.(`Chat ${user.chatDisabled ? 'enabled' : 'disabled'} for ${user.displayName || user.uid}.`, 'success');
+        notify?.(
+          `Chat ${user.chatDisabled ? 'enabled' : 'disabled'} for ${user.displayName || user.uid}.`,
+          'success'
+        );
       } catch (err) {
         console.error(err);
         notify?.('Failed to toggle chat.', 'error');
@@ -196,13 +189,19 @@ export default function UsersTab({ notify, confirm, userData }) {
 
   const renderMatchBadge = (u) => getMatchLabel(u.simpaticoMatch, users);
 
+  const th = { padding: '8px 10px', borderBottom: '1px solid #eee' };
+  const td = { padding: '8px 10px', borderBottom: '1px solid #f3f3f3' };
+
   const renderRow = (u) => {
     const isSelected = selectedUid === u.uid;
     return (
       <tr
         key={u.uid}
         onClick={() => setSelectedUid(u.uid)}
-        style={{ cursor: 'pointer', background: isSelected ? '#f7f9ff' : 'transparent' }}
+        style={{
+          cursor: 'pointer',
+          background: isSelected ? '#f7f9ff' : 'transparent',
+        }}
       >
         <td style={td}>{u.displayName || '—'}</td>
         <td style={td}>{u.email || '—'}</td>
@@ -216,8 +215,15 @@ export default function UsersTab({ notify, confirm, userData }) {
 
   return (
     <div className="users-tab">
-      {/* Controls */}
-      <div className="users-controls" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div
+        className="users-controls"
+        style={{
+          display: 'flex',
+          gap: 12,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
         <input
           type="text"
           placeholder="Search: name, email, or UID"
@@ -228,21 +234,38 @@ export default function UsersTab({ notify, confirm, userData }) {
 
         <label>
           Cause:&nbsp;
-          <select value={causeFilter} onChange={(e) => setCauseFilter(e.target.value)}>
-            {CAUSE_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+          <select
+            value={causeFilter}
+            onChange={(e) => setCauseFilter(e.target.value)}
+          >
+            {CAUSE_OPTIONS.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
           </select>
         </label>
 
         <label>
           Kinship:&nbsp;
-          <select value={kinshipFilter} onChange={(e) => setKinshipFilter(e.target.value)}>
-            {KINSHIP_OPTIONS.map((k) => <option key={k} value={k}>{k}</option>)}
+          <select
+            value={kinshipFilter}
+            onChange={(e) => setKinshipFilter(e.target.value)}
+          >
+            {KINSHIP_OPTIONS.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
           </select>
         </label>
 
         <label>
           Chat:&nbsp;
-          <select value={chatFilter} onChange={(e) => setChatFilter(e.target.value)}>
+          <select
+            value={chatFilter}
+            onChange={(e) => setChatFilter(e.target.value)}
+          >
             <option value="any">Any</option>
             <option value="enabled">Enabled</option>
             <option value="disabled">Disabled</option>
@@ -251,7 +274,10 @@ export default function UsersTab({ notify, confirm, userData }) {
 
         <label>
           Match:&nbsp;
-          <select value={matchFilter} onChange={(e) => setMatchFilter(e.target.value)}>
+          <select
+            value={matchFilter}
+            onChange={(e) => setMatchFilter(e.target.value)}
+          >
             <option value="any">Any</option>
             <option value="matched">Matched</option>
             <option value="unmatched">Unmatched</option>
@@ -259,13 +285,29 @@ export default function UsersTab({ notify, confirm, userData }) {
         </label>
 
         <span style={{ opacity: 0.7 }}>
-          {isLoading ? 'Loading…' : `Showing ${filtered.length} of ${users.length} (live)`}
+          {isLoading
+            ? 'Loading…'
+            : `Showing ${filtered.length} of ${users.length} (polling)`}
         </span>
       </div>
 
-      {/* Table + Drawer */}
-      <div className="users-content" style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, marginTop: 12 }}>
-        <div className="users-table" style={{ overflow: 'auto', border: '1px solid #ddd', borderRadius: 8 }}>
+      <div
+        className="users-content"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 360px',
+          gap: 16,
+          marginTop: 12,
+        }}
+      >
+        <div
+          className="users-table"
+          style={{
+            overflow: 'auto',
+            border: '1px solid #ddd',
+            borderRadius: 8,
+          }}
+        >
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ textAlign: 'left' }}>
@@ -281,7 +323,14 @@ export default function UsersTab({ notify, confirm, userData }) {
               {filtered.map(renderRow)}
               {!isLoading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ padding: 16, textAlign: 'center', color: '#777' }}>
+                  <td
+                    colSpan={6}
+                    style={{
+                      padding: 16,
+                      textAlign: 'center',
+                      color: '#777',
+                    }}
+                  >
                     No users match the current filters.
                   </td>
                 </tr>
@@ -290,26 +339,62 @@ export default function UsersTab({ notify, confirm, userData }) {
           </table>
         </div>
 
-        {/* Right drawer */}
-        <div className="user-drawer" style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
+        <div
+          className="user-drawer"
+          style={{
+            border: '1px solid #ddd',
+            borderRadius: 8,
+            padding: 12,
+          }}
+        >
           {!selectedUser ? (
-            <div style={{ color: '#777' }}>Select a user to view details and actions.</div>
+            <div style={{ color: '#777' }}>
+              Select a user to view details and actions.
+            </div>
           ) : (
             <>
               <h3 style={{ marginTop: 0, marginBottom: 8 }}>User</h3>
               <div style={{ fontSize: 13, lineHeight: 1.7 }}>
-                <div><strong>UID:</strong> {selectedUser.uid}</div>
-                <div><strong>Name:</strong> {selectedUser.displayName || '—'}</div>
-                <div><strong>Email:</strong> {selectedUser.email || '—'}</div>
-                <div><strong>Kinship:</strong> {selectedUser.kinship || '—'}</div>
-                <div><strong>Cause:</strong> {selectedUser.cause || '—'}</div>
-                <div><strong>Chat:</strong> {selectedUser.chatDisabled ? 'Disabled' : 'Enabled'}</div>
-                <div><strong>Match:</strong> {renderMatchBadge(selectedUser)}</div>
+                <div>
+                  <strong>UID:</strong> {selectedUser.uid}
+                </div>
+                <div>
+                  <strong>Name:</strong> {selectedUser.displayName || '—'}
+                </div>
+                <div>
+                  <strong>Email:</strong> {selectedUser.email || '—'}
+                </div>
+                <div>
+                  <strong>Kinship:</strong> {selectedUser.kinship || '—'}
+                </div>
+                <div>
+                  <strong>Cause:</strong> {selectedUser.cause || '—'}
+                </div>
+                <div>
+                  <strong>Chat:</strong>{' '}
+                  {selectedUser.chatDisabled ? 'Disabled' : 'Enabled'}
+                </div>
+                <div>
+                  <strong>Match:</strong>{' '}
+                  {renderMatchBadge(selectedUser)}
+                </div>
               </div>
 
-              <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button onClick={() => doToggleChat(selectedUser)} style={{ padding: '6px 10px' }}>
-                  {selectedUser.chatDisabled ? 'Enable Chat' : 'Disable Chat'}
+              <div
+                style={{
+                  marginTop: 12,
+                  display: 'flex',
+                  gap: 8,
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  onClick={() => doToggleChat(selectedUser)}
+                  style={{ padding: '6px 10px' }}
+                >
+                  {selectedUser.chatDisabled
+                    ? 'Enable Chat'
+                    : 'Disable Chat'}
                 </button>
 
                 <button
@@ -321,8 +406,16 @@ export default function UsersTab({ notify, confirm, userData }) {
                 </button>
               </div>
 
-              <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #eee' }}>
-                <div style={{ marginBottom: 8, fontWeight: 600 }}>Add Match</div>
+              <div
+                style={{
+                  marginTop: 16,
+                  paddingTop: 12,
+                  borderTop: '1px solid #eee',
+                }}
+              >
+                <div style={{ marginBottom: 8, fontWeight: 600 }}>
+                  Add Match
+                </div>
                 <input
                   type="text"
                   placeholder="Search partner by name, email, or UID"
@@ -333,9 +426,18 @@ export default function UsersTab({ notify, confirm, userData }) {
                   }}
                   style={{ width: '100%', marginBottom: 8 }}
                 />
-                <div style={{ maxHeight: 160, overflow: 'auto', border: '1px solid #eee', borderRadius: 6 }}>
+                <div
+                  style={{
+                    maxHeight: 160,
+                    overflow: 'auto',
+                    border: '1px solid #eee',
+                    borderRadius: 6,
+                  }}
+                >
                   {partnerCandidates.length === 0 ? (
-                    <div style={{ padding: 8, color: '#777' }}>No candidates.</div>
+                    <div style={{ padding: 8, color: '#777' }}>
+                      No candidates.
+                    </div>
                   ) : (
                     <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                       {partnerCandidates.map((u) => {
@@ -349,15 +451,21 @@ export default function UsersTab({ notify, confirm, userData }) {
                               padding: '8px 10px',
                               borderBottom: '1px solid #f6f6f6',
                               cursor: 'pointer',
-                              background: isChosen ? '#f7f9ff' : 'transparent'
+                              background: isChosen ? '#f7f9ff' : 'transparent',
                             }}
-                            title={alreadyMatched ? 'This user is already matched' : ''}
+                            title={
+                              alreadyMatched
+                                ? 'This user is already matched'
+                                : ''
+                            }
                           >
                             <div style={{ fontSize: 13 }}>
-                              <strong>{u.displayName || '—'}</strong> • {u.email || '—'}
+                              <strong>{u.displayName || '—'}</strong> •{' '}
+                              {u.email || '—'}
                             </div>
                             <div style={{ fontSize: 12, color: '#666' }}>
-                              {u.uid} — {u.kinship || '—'} / {u.cause || '—'} {alreadyMatched ? ' • matched' : ''}
+                              {u.uid} — {u.kinship || '—'} / {u.cause || '—'}{' '}
+                              {alreadyMatched ? ' • matched' : ''}
                             </div>
                           </li>
                         );
@@ -392,6 +500,3 @@ export default function UsersTab({ notify, confirm, userData }) {
     </div>
   );
 }
-
-const th = { padding: '8px 10px', borderBottom: '1px solid #eee' };
-const td = { padding: '8px 10px', borderBottom: '1px solid #f3f3f3' };
