@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import ChatMessage from '../ChatMessage/ChatMessage';
 import {
   listenToMessages,
+  getMessages,
   sendMessage as sendChatMessage,
   fetchOlderMessages,
   markConversationSeen,
@@ -15,6 +16,7 @@ export default function MessageWindow({
   userData,
   handleTriggerWarning,
   activeConversation,
+  reconnectGeneration = 0,
   language = 'en',
   initialMessages,
   hasUnread,
@@ -69,6 +71,14 @@ export default function MessageWindow({
     return () => unsub?.();
   }, [activeConversation?.docID, setHasUnread]);
 
+  // Sync messages when we reconnect after backoff
+  useEffect(() => {
+    if (!activeConversation?.docID || reconnectGeneration < 1) return;
+    getMessages(activeConversation.docID)
+      .then((msgs) => setMessages(Array.isArray(msgs) ? msgs : []))
+      .catch(() => {});
+  }, [activeConversation?.docID, reconnectGeneration]);
+
   useEffect(() => {
     if (contentRef.current) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
@@ -88,6 +98,18 @@ export default function MessageWindow({
 
   const handleSendMessage = async () => {
     if (!message.trim() || !activeConversation?.docID) return;
+    // Distress suspend: do not send when chat is disabled unless support convo or admin
+    const canSend =
+      !userData?.chatDisabled ||
+      userData?.admin ||
+      isSupportConversation(activeConversation);
+    if (!canSend) {
+      setSystemMessage?.({
+        type: 'alert',
+        message: 'Chat is suspended. You cannot send messages until the study team re-enables access.',
+      });
+      return;
+    }
 
     const body = message.trim();
     const clientId =

@@ -18,6 +18,9 @@ export const config = {
 
   /** Allowed CORS origin (default * for dev). In prod set to your frontend origin. */
   corsOrigin: env.CORS_ORIGIN || '*',
+
+  /** Study support UID (used to allow support convo access without mutual consent). */
+  supportUid: env.SUPPORT_UID || 'ULvXTMmTbmTJ9q0Z3EKyr5fx0qr1',
 };
 
 export default config;

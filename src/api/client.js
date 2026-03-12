@@ -48,6 +48,7 @@ async function requestOptions(method, options = {}) {
   return {
     method,
     ...fetchOptions,
+    credentials: fetchOptions.credentials ?? 'include',
     headers,
   };
 }

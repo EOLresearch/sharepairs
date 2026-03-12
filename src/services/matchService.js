@@ -3,6 +3,9 @@
  * Endpoints: /api/matches, /api/conversations, /api/consent/request (for requestConversation)
  */
 
+import { apiPost } from '../api';
+import { getConnectionState } from '../connection';
+
 const MATCHES_BASE = '/api/matches';
 const CONVERSATIONS_BASE = '/api/conversations';
 
@@ -57,6 +60,10 @@ export function listenToConversations(callback) {
   let cancelled = false;
   const poll = async () => {
     if (cancelled) return;
+    if (getConnectionState().status === 'reconnecting') {
+      if (!cancelled) setTimeout(poll, CONVERSATIONS_POLL_MS);
+      return;
+    }
     try {
       const list = await getConversations();
       if (!cancelled && Array.isArray(list)) callback(list);
@@ -184,24 +191,23 @@ export async function disableChatForUser(uid) {
  * Send distress alert email (and optionally log).
  */
 export async function sendDistressAlertEmail(userData, level) {
-  const res = await fetch('/api/distress', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ level, user: userData }),
-    credentials: 'include',
-  });
-  return handleResponse(res);
+  // Reuse existing distress Lambda which expects { score, message?, context? }.
+  const payload = {
+    score: level,
+    message: '',
+    context: {
+      level,
+      user: userData,
+    },
+  };
+  return apiPost('/distress', payload);
 }
 
 /**
  * Log distress selection for a user.
  */
 export async function logDistressSelection(uid, level) {
+  // Main distress flow already logs via sendDistressAlertEmail → /distress.
+  // Keep as a no-op to avoid duplicate events while preserving call sites.
   if (!uid || typeof level !== 'number') return;
-  await fetch('/api/distress/log', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uid, level }),
-    credentials: 'include',
-  });
 }

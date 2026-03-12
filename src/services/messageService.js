@@ -3,6 +3,8 @@
  * Endpoints: /api/messages, /api/messages/send, etc.
  */
 
+import { getConnectionState } from '../connection';
+
 const MESSAGES_BASE = '/api/messages';
 const POLL_INTERVAL_MS = 4000;
 
@@ -57,6 +59,10 @@ export function listenToMessages(conversationId, callback) {
 
   const poll = async () => {
     if (cancelled) return;
+    if (getConnectionState().status === 'reconnecting') {
+      if (!cancelled) setTimeout(poll, POLL_INTERVAL_MS);
+      return;
+    }
     try {
       const messages = await getMessages(conversationId);
       if (!cancelled && Array.isArray(messages)) callback(messages);
