@@ -1,98 +1,99 @@
-# Share Pairs API Documentation
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-This directory contains the OpenAPI 3.0 specification for the Share Pairs REST API.
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## Files
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-- `openapi.yaml` - Complete API specification in OpenAPI 3.0 format
+## Description
 
-## Viewing the API Documentation
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-### Option 1: Swagger UI (Recommended)
-1. Go to https://editor.swagger.io/
-2. Click "File" → "Import file"
-3. Upload `openapi.yaml`
-4. View interactive API documentation
+## Project setup
 
-### Option 2: Redoc
-1. Install Redoc CLI: `npm install -g redoc-cli`
-2. Run: `redoc-cli serve api/openapi.yaml`
-3. Open http://localhost:8080 in your browser
-
-### Option 3: Postman
-1. Open Postman
-2. Click "Import"
-3. Select "File" → Choose `openapi.yaml`
-4. Postman will generate a collection with all endpoints
-
-## API Overview
-
-### Base URL
-```
-https://{api-id}.execute-api.us-east-1.amazonaws.com/prod
-```
-
-Replace `{api-id}` with your API Gateway ID (from Terraform output: `terraform output api_gateway_id`)
-
-### Authentication
-
-All endpoints (except `/auth/*`) require a Cognito JWT token:
-
-```
-Authorization: Bearer {cognito-id-token}
+```bash
+$ npm install
 ```
 
-### Endpoints
+## Compile and run the project
 
-#### Authentication
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login user
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/forgot-password` - Request password reset
-- `POST /auth/reset-password` - Reset password with code
+```bash
+# development
+$ npm run start
 
-#### Users
-- `GET /users/me` - Get current user profile
-- `PUT /users/me` - Update current user profile
-- `GET /users/{userId}` - Get user by ID
-- `GET /users/matches` - Get matched users
+# watch mode
+$ npm run start:dev
 
-#### Conversations
-- `GET /conversations` - List user's conversations
-- `POST /conversations` - Create new conversation (admin)
-- `GET /conversations/{id}` - Get conversation details
-- `GET /conversations/{id}/messages` - Get messages
-- `POST /conversations/{id}/messages` - Send message
+# production mode
+$ npm run start:prod
+```
 
-#### Admin
-- `GET /admin/users` - List all users
-- `GET /admin/users/{id}` - Get user details
-- `PUT /admin/users/{id}` - Update user
-- `GET /admin/conversations` - List all conversations
-- `POST /admin/distress-alert` - Send distress alert
+## Run tests
 
-## Using with Terraform
+```bash
+# unit tests
+$ npm run test
 
-The OpenAPI spec can be used to:
-1. Generate API Gateway routes automatically
-2. Generate client SDKs for frontend
-3. Generate server stubs for Lambda functions
-4. Validate API requests/responses
+# e2e tests
+$ npm run test:e2e
 
-## Next Steps
+# test coverage
+$ npm run test:cov
+```
 
-1. Review and adjust the API spec as needed
-2. Generate Lambda function stubs from the spec
-3. Implement the endpoints in Lambda
-4. Connect API Gateway routes to Lambda functions
-5. Generate TypeScript client for frontend
+## Deployment
 
-## Tools
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
-- **Swagger Editor**: https://editor.swagger.io/
-- **Redoc**: https://github.com/Redocly/redoc
-- **Postman**: https://www.postman.com/
-- **OpenAPI Generator**: https://openapi-generator.tech/
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
+```bash
+$ npm install -g mau
+$ mau deploy
+```
 
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
+## Resources
+
+Check out a few resources that may come in handy when working with NestJS:
+
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+
+## Support
+
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
