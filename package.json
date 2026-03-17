@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.958.0",
     "@dicebear/collection": "^5.3.4",
     "@dicebear/core": "^5.3.4",
     "@multiavatar/multiavatar": "^1.0.7",
@@ -12,7 +11,6 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
-    "@types/bcrypt": "^6.0.0",
     "axios": "^1.6.7",
     "css-select": "^5.1.0",
     "dompurify": "^3.0.6",
@@ -26,7 +24,6 @@
     "react-dom": "^18.2.0",
     "react-icons": "^4.7.1",
     "react-scripts": "^5.0.1",
-    "save-dev": "^0.0.1-security",
     "svgo": "^3.0.2",
     "web-vitals": "^2.1.4"
   },
