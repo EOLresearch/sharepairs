@@ -27,11 +27,6 @@ resource "aws_ses_configuration_set" "distress_alerts" {
   delivery_options {
     tls_policy = "Require" # Require TLS for email delivery
   }
-
-  tags = {
-    Name    = "sharepairs-dev-distress-alerts"
-    Purpose = "SES configuration for distress alert emails"
-  }
 }
 
 # Note: Email/domain verification must be done manually in AWS Console

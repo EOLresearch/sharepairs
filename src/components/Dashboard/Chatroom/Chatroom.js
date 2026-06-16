@@ -9,10 +9,12 @@ import SystemMessage from '../../SystemMessage/SystemMessage';
 import { useAuth } from '../../UserAuth/AuthContext';
 import {
   listenToConversations,
+  getConversations,
   sendDistressAlertEmail,
   logDistressSelection,
   disableChatForUser,
 } from '../../../services/matchService';
+import { useConnection } from '../../../connection';
 import { respondToConsent } from '../../../services/consentService';
 import { updateUserProfile, addContactIfNotExists } from '../../../services/authService';
 import { SUPPORT_UID } from '../../../constants';
@@ -35,6 +37,7 @@ export default function Chatroom({ language, setLanguage }) {
   const iconCtx = useMemo(() => ({ className: 'react-icons-chatroom' }), []);
 
   const { user, userData } = useAuth();
+  const { status: connectionStatus, reconnectGeneration } = useConnection();
   const authId = user?.uid;
 
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
@@ -109,6 +112,21 @@ export default function Chatroom({ language, setLanguage }) {
 
     return () => unsubscribe?.();
   }, [authId, userData]);
+
+  // Sync conversations (and unread) when we reconnect after backoff
+  useEffect(() => {
+    if (!authId || !userData || reconnectGeneration < 1) return;
+    getConversations()
+      .then((list) => {
+        const convoList = Array.isArray(list) ? list : [];
+        setConversations(convoList);
+        const anyUnread = convoList.some((c) =>
+          Array.isArray(c.hasUnreadBy) ? c.hasUnreadBy.includes(authId) : false
+        );
+        setHasUnread(Boolean(anyUnread));
+      })
+      .catch((err) => console.warn('Reconnect sync conversations failed:', err));
+  }, [authId, userData, reconnectGeneration]);
 
   const isSupportConversation = useCallback((c) => {
     if (!c) return false;
@@ -456,6 +474,11 @@ export default function Chatroom({ language, setLanguage }) {
       />
 
       <div className="chatroom">
+        {connectionStatus === 'reconnecting' && (
+          <div className="reconnecting-banner" role="status">
+            Reconnecting…
+          </div>
+        )}
         <LeftPanel
           expanded={leftExpanded}
           setExpanded={setLeftExpanded}
@@ -480,6 +503,7 @@ export default function Chatroom({ language, setLanguage }) {
         <MessageWindow
           userData={userData}
           activeConversation={activeConversation}
+          reconnectGeneration={reconnectGeneration}
           handleTriggerWarning={() => setShowWarning(true)}
           isMatched={isMatched}
           language={language}

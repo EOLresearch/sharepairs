@@ -24,7 +24,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"  # Free tier region
+  region = "us-east-2"
   
   default_tags {
     tags = {

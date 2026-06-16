@@ -137,6 +137,33 @@ resource "aws_cloudfront_distribution" "frontend" {
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
   }
 
+  # API Gateway origin — same CloudFront URL serves /api/* so auth cookies stay same-origin
+  origin {
+    domain_name = replace(aws_apigatewayv2_api.main.api_endpoint, "https://", "")
+    origin_id   = "API-${aws_apigatewayv2_api.main.id}"
+    origin_path = "/${aws_apigatewayv2_stage.production.name}"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols     = ["TLSv1.2"]
+    }
+  }
+
+  # API routes — no caching, forward cookies and auth headers
+  ordered_cache_behavior {
+    path_pattern     = "/api/*"
+    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "API-${aws_apigatewayv2_api.main.id}"
+
+    viewer_protocol_policy = "redirect-to-https"
+    cache_policy_id        = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # Managed-CachingDisabled
+    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492afa07d3" # Managed-AllViewer
+    compress               = false
+  }
+
   # Default cache behavior - enforce HTTPS
   default_cache_behavior {
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]

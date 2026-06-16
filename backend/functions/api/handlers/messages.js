@@ -2,6 +2,7 @@ import { success, error } from '../../../shared/response.js';
 import { authenticateUser } from '../../../shared/auth.js';
 import { getItem, putItem, query, updateItem } from '../../../shared/database.js';
 import { TABLES } from '../../../shared/database.js';
+import { config } from '../../../shared/config.js';
 import crypto from 'crypto';
 
 function toConvoId(u1, u2) {
@@ -14,14 +15,28 @@ function toConvoId(u1, u2) {
  * Optional: before= cursor, pageSize=10 for pagination
  */
 export async function getMessages(event) {
+  let auth;
   try {
-    await authenticateUser(event);
+    auth = await authenticateUser(event);
   } catch (err) {
     return error(err.message || 'Unauthorized', 401);
   }
   const q = event.queryStringParameters || {};
   const conversationId = q.conversationId;
   if (!conversationId) return error('conversationId required', 400);
+
+  const convo = await getItem(TABLES.CONVERSATIONS, { id: conversationId });
+  if (!convo) return error('Conversation not found', 404);
+  const users = convo.users || [];
+  if (!users.includes(auth.userId)) return error('Not a participant', 403);
+  const isSupport =
+    users.includes(config.supportUid) ||
+    convo.recipient === config.supportUid ||
+    convo.requester === config.supportUid ||
+    convo.type === 'support';
+  if (!convo.mutual_consent && !isSupport && !auth.isAdmin) {
+    return error('Conversation is not mutually accepted yet', 403);
+  }
 
   const limit = Math.min(parseInt(q.pageSize || '50', 10) || 50, 100);
   const before = q.before || null;
@@ -81,6 +96,20 @@ export async function sendMessage(event) {
   if (!convo) return error('Conversation not found', 404);
   const users = convo.users || [];
   if (!users.includes(auth.userId)) return error('Not a participant', 403);
+  const isSupport =
+    users.includes(config.supportUid) ||
+    convo.recipient === config.supportUid ||
+    convo.requester === config.supportUid ||
+    convo.type === 'support';
+  if (!convo.mutual_consent && !isSupport && !auth.isAdmin) {
+    return error('Conversation is not mutually accepted yet', 403);
+  }
+
+  // Distress suspend: sender must not have chat disabled (unless support convo or admin)
+  const senderChatDisabled = auth.chat_disabled === true || auth.chatDisabled === true;
+  if (senderChatDisabled && !isSupport && !auth.isAdmin) {
+    return error('Chat is suspended. You cannot send messages until the study team re-enables access.', 403);
+  }
 
   const messageId = crypto.randomUUID();
   const now = Date.now();
@@ -125,8 +154,9 @@ export async function sendMessage(event) {
  * Body: { conversationId, uid }
  */
 export async function markSeen(event) {
+  let auth;
   try {
-    await authenticateUser(event);
+    auth = await authenticateUser(event);
   } catch (err) {
     return error(err.message || 'Unauthorized', 401);
   }
@@ -142,6 +172,7 @@ export async function markSeen(event) {
 
   const convo = await getItem(TABLES.CONVERSATIONS, { id: conversationId });
   if (!convo) return error('Conversation not found', 404);
+  if (!(convo.users || []).includes(auth.userId)) return error('Not a participant', 403);
   const hasUnreadBy = (convo.has_unread_by || []).filter((u) => u !== uid);
   const seenBy = { ...(convo.seen_by || {}), [uid]: Date.now() };
   await updateItem(TABLES.CONVERSATIONS, { id: conversationId }, {
