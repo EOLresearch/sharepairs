@@ -154,6 +154,17 @@ resource "aws_iam_role_policy" "lambda_custom" {
         ]
         Resource = "*"
         # Note: SES identity verification (email/domain) must be done separately
+      },
+      {
+        # Allow Lambda to push messages to WebSocket clients
+        Effect = "Allow"
+        Action = [
+          "execute-api:ManageConnections",
+          "execute-api:Invoke"
+        ]
+        Resource = [
+          "arn:aws:execute-api:*:*:*/*/@connections/*"
+        ]
       }
     ]
   })
@@ -224,16 +235,15 @@ resource "aws_iam_role_policy" "cognito_authenticated" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::sharepairs-dev-user-uploads/$${aws:userid}/*"  # ${aws:userid} = their Cognito identity ID (escaped for Terraform)
+          "${aws_s3_bucket.user_uploads.arn}/$${aws:userid}/*"
         ]
       },
       {
-        # Users can list their own folder (to see their uploads)
         Effect = "Allow"
         Action = [
           "s3:ListBucket"
         ]
-        Resource = "arn:aws:s3:::sharepairs-dev-user-uploads"
+        Resource = aws_s3_bucket.user_uploads.arn
         Condition = {
           StringLike = {
             "s3:prefix" = "$${aws:userid}/*"  # Only their folder (escaped for Terraform)

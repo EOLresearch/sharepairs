@@ -211,7 +211,7 @@ resource "aws_cognito_user_pool_client" "main" {
 # ============================================================================
 
 resource "aws_cognito_user_pool_domain" "main" {
-  domain       = "sharepairs-dev-auth"
+  domain       = local.cognito_domain
   user_pool_id = aws_cognito_user_pool.main.id
 }
 

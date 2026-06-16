@@ -1,39 +1,11 @@
 # ============================================================================
 # CloudTrail & AWS Config - HIPAA Compliance Auditing
-# ============================================================================
-# 
-# AUDITING SERVICES EXPLAINED:
-# -----------------------------
-# 
-# CloudTrail:
-# - Logs ALL API calls made to AWS services
-# - Records: Who did what, when, from where, and what resources were accessed
-# - Essential for HIPAA compliance (audit trail)
-# - Answers: "Who accessed that S3 bucket?" "When was this Lambda modified?"
-#
-# AWS Config:
-# - Tracks changes to your AWS resources over time
-# - Records: Configuration changes, compliance status
-# - Essential for HIPAA compliance (configuration management)
-# - Answers: "When did this security group change?" "Is encryption enabled?"
-#
-# Why Both?
-# - CloudTrail = Activity logging (who did what)
-# - Config = Configuration tracking (what changed)
-# - Together = Complete audit trail for HIPAA
-#
-# ============================================================================
-# Note: Data sources for account ID and region are defined in s3.tf
-# ============================================================================
-# CloudTrail - API Activity Logging
+# Disabled by default (enable_auditing=true) — requires extra IAM permissions.
 # ============================================================================
 
-# S3 bucket for CloudTrail logs (we'll use our existing logs bucket)
-# CloudTrail needs a dedicated prefix within the bucket
-
-# IAM role for CloudTrail to write logs
 resource "aws_iam_role" "cloudtrail" {
-  name = "sharepairs-cloudtrail-role"
+  count = var.enable_auditing ? 1 : 0
+  name  = "sharepairs-cloudtrail-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -49,15 +21,15 @@ resource "aws_iam_role" "cloudtrail" {
   })
 
   tags = {
-    Name = "sharepairs-cloudtrail-role"
+    Name    = "sharepairs-cloudtrail-role"
     Purpose = "CloudTrail log delivery"
   }
 }
 
-# Policy for CloudTrail to write to S3
 resource "aws_iam_role_policy" "cloudtrail" {
-  name = "sharepairs-cloudtrail-policy"
-  role = aws_iam_role.cloudtrail.id
+  count = var.enable_auditing ? 1 : 0
+  name  = "sharepairs-cloudtrail-policy"
+  role  = aws_iam_role.cloudtrail[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -85,10 +57,10 @@ resource "aws_iam_role_policy" "cloudtrail" {
   })
 }
 
-# CloudWatch Log Group for CloudTrail (must be created before CloudTrail)
 resource "aws_cloudwatch_log_group" "cloudtrail" {
+  count             = var.enable_auditing ? 1 : 0
   name              = "sharepairs-cloudtrail"
-  retention_in_days = 90  # Keep logs for 90 days (adjust per HIPAA retention)
+  retention_in_days = 90
 
   tags = {
     Name    = "sharepairs-cloudtrail"
@@ -96,59 +68,45 @@ resource "aws_cloudwatch_log_group" "cloudtrail" {
   }
 }
 
-# CloudTrail Trail - logs all API activity
 resource "aws_cloudtrail" "main" {
+  count          = var.enable_auditing ? 1 : 0
   name           = "sharepairs-audit-trail"
   s3_bucket_name = aws_s3_bucket.logs.id
   s3_key_prefix  = "cloudtrail/"
 
-  include_global_service_events = true  # Log all AWS services
-  is_multi_region_trail         = true  # Track activity across all regions
+  include_global_service_events = true
+  is_multi_region_trail         = true
   enable_logging                = true
-  enable_log_file_validation    = true  # Verify log integrity
+  enable_log_file_validation    = true
 
-  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail.arn}:*"
-  cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail.arn
+  cloud_watch_logs_group_arn = "${aws_cloudwatch_log_group.cloudtrail[0].arn}:*"
+  cloud_watch_logs_role_arn  = aws_iam_role.cloudtrail[0].arn
 
   event_selector {
-    read_write_type                 = "All"
-    include_management_events       = true
+    read_write_type           = "All"
+    include_management_events = true
 
     data_resource {
       type   = "AWS::S3::Object"
-      values = ["${aws_s3_bucket.user_uploads.arn}/*"]  # Log S3 access
+      values = ["${aws_s3_bucket.user_uploads.arn}/*"]
     }
   }
 
-  # Note: DynamoDB API calls are automatically logged via management events
-  # CloudTrail doesn't support wildcards in table names for data resource selectors
-  # All DynamoDB operations will still be captured in the trail logs
-
   tags = {
-    Name        = "sharepairs-audit-trail"
-    Purpose     = "HIPAA compliance audit logging"
-    HIPAA       = "Compliant"
+    Name    = "sharepairs-audit-trail"
+    Purpose = "HIPAA compliance audit logging"
+    HIPAA   = "Compliant"
   }
 
   depends_on = [
     aws_s3_bucket_policy.logs,
-    aws_cloudwatch_log_group.cloudtrail
+    aws_cloudwatch_log_group.cloudtrail,
   ]
 }
 
-# S3 bucket policy for logs bucket (allows CloudTrail and Config to write)
-# Note: This policy allows both CloudTrail and Config to write to the logs bucket
-
-# ============================================================================
-# AWS Config - Configuration Tracking
-# ============================================================================
-
-# S3 bucket for AWS Config snapshots (we'll use our logs bucket)
-# Config needs a dedicated prefix
-
-# IAM role for AWS Config
 resource "aws_iam_role" "config" {
-  name = "sharepairs-config-role"
+  count = var.enable_auditing ? 1 : 0
+  name  = "sharepairs-config-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -169,10 +127,10 @@ resource "aws_iam_role" "config" {
   }
 }
 
-# Policy for AWS Config to read/write
 resource "aws_iam_role_policy" "config" {
-  name = "sharepairs-config-policy"
-  role = aws_iam_role.config.id
+  count = var.enable_auditing ? 1 : 0
+  name  = "sharepairs-config-policy"
+  role  = aws_iam_role.config[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -191,8 +149,8 @@ resource "aws_iam_role_policy" "config" {
         }
       },
       {
-        Effect = "Allow"
-        Action = "s3:GetBucketAcl"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketAcl"
         Resource = aws_s3_bucket.logs.arn
       },
       {
@@ -209,46 +167,45 @@ resource "aws_iam_role_policy" "config" {
   })
 }
 
-# AWS Config Configuration Recorder - tracks resource changes
 resource "aws_config_configuration_recorder" "main" {
+  count    = var.enable_auditing ? 1 : 0
   name     = "sharepairs-config-recorder"
-  role_arn = aws_iam_role.config.arn
+  role_arn = aws_iam_role.config[0].arn
 
   recording_group {
-    all_supported                 = true   # Record all supported resource types
-    include_global_resource_types = true   # Include global resources (IAM, etc.)
+    all_supported                 = true
+    include_global_resource_types = true
   }
 }
 
-# AWS Config Delivery Channel - where to send configuration snapshots
 resource "aws_config_delivery_channel" "main" {
+  count          = var.enable_auditing ? 1 : 0
   name           = "sharepairs-config-delivery"
   s3_bucket_name = aws_s3_bucket.logs.id
   s3_key_prefix  = "config"
 
   snapshot_delivery_properties {
-    delivery_frequency = "TwentyFour_Hours"  # Daily snapshots
+    delivery_frequency = "TwentyFour_Hours"
   }
 
   depends_on = [aws_config_configuration_recorder.main]
 }
 
-# Start the configuration recorder
 resource "aws_config_configuration_recorder_status" "main" {
-  name       = aws_config_configuration_recorder.main.name
+  count      = var.enable_auditing ? 1 : 0
+  name       = aws_config_configuration_recorder.main[0].name
   is_enabled = true
 
   depends_on = [aws_config_delivery_channel.main]
 }
 
-# S3 bucket policy for logs bucket - merged policy for CloudTrail + Config
 resource "aws_s3_bucket_policy" "logs" {
+  count  = var.enable_auditing ? 1 : 0
   bucket = aws_s3_bucket.logs.id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      # CloudTrail permissions
       {
         Sid    = "AWSCloudTrailAclCheck"
         Effect = "Allow"
@@ -279,7 +236,6 @@ resource "aws_s3_bucket_policy" "logs" {
           }
         }
       },
-      # AWS Config permissions
       {
         Sid    = "AWSConfigAclCheck"
         Effect = "Allow"
@@ -306,4 +262,3 @@ resource "aws_s3_bucket_policy" "logs" {
     ]
   })
 }
-
