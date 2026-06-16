@@ -5,8 +5,15 @@
  * - Use setTokenGetter() to supply the JWT (e.g. from Cognito or Firebase)
  */
 
-const getBaseUrl = () =>
-  process.env.REACT_APP_API_URL || 'http://localhost:3001';
+function getBaseUrl() {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return '';
+  }
+  return 'http://localhost:3001';
+}
 
 let tokenGetter = null;
 
