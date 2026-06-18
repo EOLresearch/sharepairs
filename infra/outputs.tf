@@ -3,8 +3,8 @@
 # ============================================================================
 
 output "lambda_execution_role_arn" {
-  description = "ARN of the Lambda execution role (use this when creating Lambda functions)"
-  value       = aws_iam_role.lambda_execution.arn
+  description = "ARN of the ITS Lambda execution role (webdev-lambda-role)"
+  value       = data.aws_iam_role.lambda_execution.arn
 }
 
 output "cognito_authenticated_role_arn" {
@@ -81,17 +81,17 @@ output "kms_key_arn" {
 
 output "cloudtrail_name" {
   description = "Name of the CloudTrail trail for audit logging"
-  value       = aws_cloudtrail.main.name
+  value       = var.enable_auditing ? aws_cloudtrail.main[0].name : null
 }
 
 output "cloudtrail_arn" {
   description = "ARN of the CloudTrail trail"
-  value       = aws_cloudtrail.main.arn
+  value       = var.enable_auditing ? aws_cloudtrail.main[0].arn : null
 }
 
 output "config_recorder_name" {
   description = "Name of the AWS Config recorder"
-  value       = aws_config_configuration_recorder.main.name
+  value       = var.enable_auditing ? aws_config_configuration_recorder.main[0].name : null
 }
 
 # ============================================================================
@@ -140,6 +140,21 @@ output "api_gateway_arn" {
 output "api_gateway_execution_arn" {
   description = "API Gateway execution ARN (use this for Lambda permissions)"
   value       = aws_apigatewayv2_api.main.execution_arn
+}
+
+output "websocket_api_id" {
+  description = "WebSocket API Gateway ID"
+  value       = aws_apigatewayv2_api.websocket.id
+}
+
+output "websocket_api_endpoint" {
+  description = "WebSocket API URL (set REACT_APP_WS_URL to wss://.../prod)"
+  value       = "${aws_apigatewayv2_api.websocket.api_endpoint}/${aws_apigatewayv2_stage.websocket.name}"
+}
+
+output "websocket_management_endpoint" {
+  description = "WebSocket management API endpoint for Lambda broadcast"
+  value       = "https://${aws_apigatewayv2_api.websocket.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_apigatewayv2_stage.websocket.name}"
 }
 
 # ============================================================================

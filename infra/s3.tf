@@ -52,7 +52,7 @@ resource "aws_kms_key" "s3" {
         Sid    = "Allow Lambda to use key"
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.lambda_execution.arn
+          AWS = data.aws_iam_role.lambda_execution.arn
         }
         Action = [
           "kms:Decrypt",
@@ -88,10 +88,10 @@ resource "aws_kms_alias" "s3" {
 # ============================================================================
 
 resource "aws_s3_bucket" "user_uploads" {
-  bucket = "sharepairs-dev-user-uploads"
+  bucket = local.s3_user_uploads
 
   tags = {
-    Name        = "sharepairs-dev-user-uploads"
+    Name        = local.s3_user_uploads
     Purpose     = "User profile pictures and file uploads"
     HIPAA       = "Compliant"
   }
@@ -169,10 +169,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "user_uploads" {
 # ============================================================================
 
 resource "aws_s3_bucket" "logs" {
-  bucket = "sharepairs-dev-logs"
+  bucket = local.s3_logs
 
   tags = {
-    Name        = "sharepairs-dev-logs"
+    Name        = local.s3_logs
     Purpose     = "Application logs and CloudWatch exports"
     HIPAA       = "Compliant"
   }

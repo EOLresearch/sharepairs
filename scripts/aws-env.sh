@@ -48,7 +48,7 @@ _discover_api() {
 
 _discover_bucket() {
   aws s3api list-buckets \
-    --query "Buckets[?Name=='${PROJECT_PREFIX}-frontend'].Name | [0]" \
+    --query "Buckets[?contains(Name, '${PROJECT_PREFIX}') && contains(Name, '-frontend')].Name | [0]" \
     --output text 2>/dev/null | sed '/^None$/d'
 }
 
@@ -99,7 +99,7 @@ if [ -z "$API_GATEWAY_ID" ]; then API_GATEWAY_ID="$(_discover_api)"; fi
 
 : "${FRONTEND_BUCKET:=$(_tf frontend_bucket_name)}"
 if [ -z "$FRONTEND_BUCKET" ]; then FRONTEND_BUCKET="$(_discover_bucket)"; fi
-: "${FRONTEND_BUCKET:=${PROJECT_PREFIX}-frontend}"
+: "${FRONTEND_BUCKET:=${PROJECT_PREFIX}-${AWS_ACCOUNT_ID}-frontend}"
 
 : "${CLOUDFRONT_DISTRIBUTION_ID:=$(_tf cloudfront_distribution_id)}"
 : "${CLOUDFRONT_DOMAIN:=$(_tf cloudfront_domain_name)}"

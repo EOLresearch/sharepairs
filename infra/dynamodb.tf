@@ -157,3 +157,39 @@ resource "aws_dynamodb_table" "distress_events" {
   }
 }
 
+# ============================================================================
+# WebSocket Connections Table — maps API Gateway connectionId to userId
+# ============================================================================
+
+resource "aws_dynamodb_table" "connections" {
+  name         = "sharepairs-dev-connections"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "connection_id"
+
+  attribute {
+    name = "connection_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "user_id"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "user-id-index"
+    hash_key        = "user_id"
+    projection_type = "ALL"
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = {
+    Name    = "sharepairs-dev-connections"
+    Purpose = "WebSocket connection registry for realtime push"
+    HIPAA   = "Compliant"
+  }
+}
+

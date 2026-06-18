@@ -21,54 +21,19 @@
 # ============================================================================
 
 # ============================================================================
-# ROLE 1: Lambda Execution Role
+# Lambda execution role — ITS-provided (webdev-lambda-role)
 # ============================================================================
-# 
-# What it does:
-# - Gives Lambda functions permission to run and access AWS services
-# - Lambda functions "assume" this role when they execute
-# 
-# What permissions it needs (LEAN):
-# 1. CloudWatch Logs - Lambda must write logs (required)
-# 2. DynamoDB - Read/write to database tables
-# 3. S3 - Read/write files (user uploads, assets)
-#
-# ============================================================================
+# Fabrice provisioned this role; we reference it instead of creating our own.
+# Requires iam:PassRole (already granted) when creating Lambda functions.
 
-resource "aws_iam_role" "lambda_execution" {
-  name = "sharepairs-lambda-execution-role"
-
-  # This policy says "Lambda service can assume (use) this role"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-
-  tags = {
-    Name        = "sharepairs-lambda-execution-role"
-    Description = "Role for Lambda functions to access AWS services"
-  }
+data "aws_iam_role" "lambda_execution" {
+  name = var.lambda_execution_role_name
 }
 
-# Attach AWS managed policy for basic Lambda execution (CloudWatch Logs)
-resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
-  role       = aws_iam_role.lambda_execution.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-  # This gives: logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents
-}
-
-# Custom policy for Lambda to access YOUR specific resources (LEAN permissions)
+# App-specific permissions on the shared webdev role (requires iam:PutRolePolicy).
 resource "aws_iam_role_policy" "lambda_custom" {
   name = "sharepairs-lambda-custom-policy"
-  role = aws_iam_role.lambda_execution.id
+  role = data.aws_iam_role.lambda_execution.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -101,8 +66,10 @@ resource "aws_iam_role_policy" "lambda_custom" {
           "s3:ListBucket"
         ]
         Resource = [
-          "arn:aws:s3:::sharepairs-dev-*/*",  # Only buckets starting with "sharepairs-dev-"
-          "arn:aws:s3:::sharepairs-dev-*"     # Bucket itself (for ListBucket)
+          "arn:aws:s3:::sharepairs-dev-${data.aws_caller_identity.current.account_id}-*/*",
+          "arn:aws:s3:::sharepairs-dev-${data.aws_caller_identity.current.account_id}-*",
+          "arn:aws:s3:::sharepairs-dev-*/*",
+          "arn:aws:s3:::sharepairs-dev-*"
         ]
       },
       {
@@ -154,6 +121,17 @@ resource "aws_iam_role_policy" "lambda_custom" {
         ]
         Resource = "*"
         # Note: SES identity verification (email/domain) must be done separately
+      },
+      {
+        # Allow Lambda to push messages to WebSocket clients
+        Effect = "Allow"
+        Action = [
+          "execute-api:ManageConnections",
+          "execute-api:Invoke"
+        ]
+        Resource = [
+          "arn:aws:execute-api:*:*:*/*/@connections/*"
+        ]
       }
     ]
   })
@@ -224,16 +202,15 @@ resource "aws_iam_role_policy" "cognito_authenticated" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:aws:s3:::sharepairs-dev-user-uploads/$${aws:userid}/*"  # ${aws:userid} = their Cognito identity ID (escaped for Terraform)
+          "${aws_s3_bucket.user_uploads.arn}/$${aws:userid}/*"
         ]
       },
       {
-        # Users can list their own folder (to see their uploads)
         Effect = "Allow"
         Action = [
           "s3:ListBucket"
         ]
-        Resource = "arn:aws:s3:::sharepairs-dev-user-uploads"
+        Resource = aws_s3_bucket.user_uploads.arn
         Condition = {
           StringLike = {
             "s3:prefix" = "$${aws:userid}/*"  # Only their folder (escaped for Terraform)

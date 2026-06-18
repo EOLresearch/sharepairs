@@ -21,6 +21,12 @@ export const config = {
 
   /** Study support UID (used to allow support convo access without mutual consent). */
   supportUid: env.SUPPORT_UID || 'ULvXTMmTbmTJ9q0Z3EKyr5fx0qr1',
+
+  /** API Gateway WebSocket management endpoint (https://{api-id}.execute-api.{region}.amazonaws.com/{stage}) */
+  websocketEndpoint: env.WEBSOCKET_API_ENDPOINT || null,
+
+  /** Use in-memory connection map (local dev server). */
+  useLocalConnections: env.USE_LOCAL_CONNECTIONS === 'true',
 };
 
 export default config;

@@ -28,7 +28,7 @@ data "archive_file" "upload_url" {
 
 resource "aws_lambda_function" "upload_url" {
   function_name = "sharepairs-dev-upload-url"
-  role          = aws_iam_role.lambda_execution.arn
+  role          = data.aws_iam_role.lambda_execution.arn
   handler       = "functions/files/upload-url.handler"
   runtime       = "nodejs20.x"
   timeout       = 30
@@ -74,7 +74,7 @@ data "archive_file" "download_url" {
 
 resource "aws_lambda_function" "download_url" {
   function_name = "sharepairs-dev-download-url"
-  role          = aws_iam_role.lambda_execution.arn
+  role          = data.aws_iam_role.lambda_execution.arn
   handler       = "functions/files/download-url.handler"
   runtime       = "nodejs20.x"
   timeout       = 30
@@ -121,7 +121,7 @@ data "archive_file" "distress_submit" {
 
 resource "aws_lambda_function" "distress_submit" {
   function_name = "sharepairs-dev-distress-submit"
-  role          = aws_iam_role.lambda_execution.arn
+  role          = data.aws_iam_role.lambda_execution.arn
   handler       = "functions/distress/submit.handler"
   runtime       = "nodejs20.x"
   timeout       = 30
@@ -169,7 +169,7 @@ data "archive_file" "distress_worker" {
 
 resource "aws_lambda_function" "distress_worker" {
   function_name = "sharepairs-dev-distress-worker"
-  role          = aws_iam_role.lambda_execution.arn
+  role          = data.aws_iam_role.lambda_execution.arn
   handler       = "functions/distress/worker.handler"
   runtime       = "nodejs20.x"
   timeout       = 60  # Longer timeout for email sending
@@ -206,5 +206,58 @@ resource "aws_lambda_event_source_mapping" "distress_worker" {
 
   # Retry configuration
   maximum_retry_attempts = 3  # Retry 3 times before sending to DLQ
+}
+
+# ============================================================================
+# Lambda Function: REST API (auth, messages, conversations, consent)
+# ============================================================================
+
+data "archive_file" "api" {
+  type        = "zip"
+  source_dir  = "${path.module}/../backend"
+  output_path = "${path.module}/../backend/functions/api/api.zip"
+  excludes = [
+    "*.zip",
+    ".build/**",
+    "functions/**/upload-url.js",
+    "functions/**/download-url.js",
+    "functions/**/submit.js",
+    "functions/**/worker.js",
+    "functions/websocket/**",
+    "functions/auth/**",
+    "functions/files/**",
+    "functions/distress/**",
+    "local-server.mjs",
+    "package-lock.json"
+  ]
+}
+
+resource "aws_lambda_function" "api" {
+  function_name = "sharepairs-dev-api"
+  role          = data.aws_iam_role.lambda_execution.arn
+  handler       = "functions/api/index.handler"
+  runtime       = "nodejs20.x"
+  timeout       = 30
+  memory_size   = 256
+
+  filename         = data.archive_file.api.output_path
+  source_code_hash = data.archive_file.api.output_base64sha256
+
+  environment {
+    variables = {
+      STUB_AUTH              = "false"
+      USERS_TABLE            = "sharepairs-dev-users"
+      CONVERSATIONS_TABLE    = "sharepairs-dev-conversations"
+      MESSAGES_TABLE         = "sharepairs-dev-messages"
+      CONNECTIONS_TABLE      = aws_dynamodb_table.connections.name
+      WEBSOCKET_API_ENDPOINT = "https://${aws_apigatewayv2_api.websocket.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_apigatewayv2_stage.websocket.name}"
+      CORS_ORIGIN            = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+    }
+  }
+
+  tags = {
+    Name    = "sharepairs-dev-api"
+    Purpose = "REST API for auth, messages, and conversations"
+  }
 }
 

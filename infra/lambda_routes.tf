@@ -86,3 +86,29 @@ resource "aws_lambda_permission" "distress_submit" {
   source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
 }
 
+# ============================================================================
+# REST API catch-all route ($default proxies /api/* to api Lambda)
+# ============================================================================
+
+resource "aws_apigatewayv2_integration" "api" {
+  api_id = aws_apigatewayv2_api.main.id
+
+  integration_type   = "AWS_PROXY"
+  integration_method = "POST"
+  integration_uri    = aws_lambda_function.api.invoke_arn
+}
+
+resource "aws_apigatewayv2_route" "api_default" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.api.id}"
+}
+
+resource "aws_lambda_permission" "api" {
+  statement_id  = "AllowExecutionFromAPIGatewayApi"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.api.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main.execution_arn}/*/*"
+}
+

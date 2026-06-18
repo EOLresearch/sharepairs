@@ -25,10 +25,10 @@
 # ============================================================================
 
 resource "aws_s3_bucket" "frontend" {
-  bucket = "sharepairs-dev-frontend" # Must be globally unique
+  bucket = local.s3_frontend
 
   tags = {
-    Name    = "sharepairs-dev-frontend"
+    Name    = local.s3_frontend
     Purpose = "React app static site hosting"
     HIPAA   = "Compliant"
   }
