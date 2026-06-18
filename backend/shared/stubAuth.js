@@ -69,7 +69,8 @@ export function verifyStubToken(token) {
   if (sig !== expectedSig) return null;
   try {
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
-    return payload.sub ? payload : null;
+    // Return just the userId (sub) so callers can use it directly as the DynamoDB key.
+    return payload.sub ? payload.sub : null;
   } catch {
     return null;
   }

@@ -3,3 +3,9 @@ variable "enable_auditing" {
   type        = bool
   default     = false
 }
+
+variable "lambda_execution_role_name" {
+  description = "ITS-provided Lambda execution role (do not create via Terraform)"
+  type        = string
+  default     = "webdev-lambda-role"
+}

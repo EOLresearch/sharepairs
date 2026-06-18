@@ -14,7 +14,8 @@ export const TABLES = {
   USER_PROFILES: process.env.USER_PROFILES_TABLE || 'sharepairs-dev-user-profiles',
   AUDIT_LOGS: process.env.AUDIT_LOGS_TABLE || 'sharepairs-dev-audit-logs',
   FILES: process.env.FILES_TABLE || 'sharepairs-dev-files',
-  DISTRESS_EVENTS: process.env.DISTRESS_EVENTS_TABLE || 'sharepairs-dev-distress-events'
+  DISTRESS_EVENTS: process.env.DISTRESS_EVENTS_TABLE || 'sharepairs-dev-distress-events',
+  CONNECTIONS: process.env.CONNECTIONS_TABLE || 'sharepairs-dev-connections',
 };
 
 /**
