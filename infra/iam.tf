@@ -32,7 +32,7 @@ data "aws_iam_role" "lambda_execution" {
 
 # App-specific permissions on the shared webdev role (requires iam:PutRolePolicy).
 resource "aws_iam_role_policy" "lambda_custom" {
-  name = "sharepairs-lambda-custom-policy"
+  name = "sharepairs-dev-lambda-custom-policy"
   role = data.aws_iam_role.lambda_execution.id
 
   policy = jsonencode({
@@ -153,7 +153,7 @@ resource "aws_iam_role_policy" "lambda_custom" {
 # ============================================================================
 
 resource "aws_iam_role" "cognito_authenticated" {
-  name = "sharepairs-cognito-authenticated-role"
+  name = "sharepairs-dev-cognito-authenticated-role"
 
   # This policy says "Cognito Identity service can assume this role for authenticated users"
   # Note: We reference the identity pool ID here, which creates a dependency.
@@ -180,14 +180,14 @@ resource "aws_iam_role" "cognito_authenticated" {
   })
 
   tags = {
-    Name        = "sharepairs-cognito-authenticated-role"
+    Name        = "sharepairs-dev-cognito-authenticated-role"
     Description = "Role for authenticated users to access AWS services from frontend"
   }
 }
 
 # Custom policy for authenticated users (VERY LEAN - only what users need)
 resource "aws_iam_role_policy" "cognito_authenticated" {
-  name = "sharepairs-cognito-authenticated-policy"
+  name = "sharepairs-dev-cognito-authenticated-policy"
   role = aws_iam_role.cognito_authenticated.id
 
   policy = jsonencode({
