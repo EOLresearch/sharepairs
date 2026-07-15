@@ -4,10 +4,10 @@ variable "enable_auditing" {
   default     = false
 }
 
-variable "lambda_execution_role_name" {
-  description = "ITS-provided Lambda execution role (do not create via Terraform)"
+variable "lambda_execution_role_arn" {
+  description = "ITS-provided Lambda execution role ARN (no iam:GetRole lookup needed)"
   type        = string
-  default     = "webdev-lambda-role"
+  default     = "arn:aws:iam::562395967936:role/webdev-lambda-role"
 }
 
 variable "attach_lambda_custom_policy" {

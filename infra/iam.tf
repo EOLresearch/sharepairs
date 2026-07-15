@@ -23,11 +23,12 @@
 # ============================================================================
 # Lambda execution role — ITS-provided (webdev-lambda-role)
 # ============================================================================
-# Fabrice provisioned this role; we reference it instead of creating our own.
-# Requires iam:PassRole (already granted) when creating Lambda functions.
+# Fabrice provisioned this role; we use the ARN directly (avoids iam:GetRole).
+# Requires iam:PassRole when creating Lambda functions.
 
-data "aws_iam_role" "lambda_execution" {
-  name = var.lambda_execution_role_name
+locals {
+  lambda_execution_role_arn  = var.lambda_execution_role_arn
+  lambda_execution_role_name   = element(split("/", var.lambda_execution_role_arn), 1)
 }
 
 # App-specific permissions on the shared webdev role (requires iam:PutRolePolicy).
@@ -35,7 +36,7 @@ data "aws_iam_role" "lambda_execution" {
 resource "aws_iam_role_policy" "lambda_custom" {
   count = var.attach_lambda_custom_policy ? 1 : 0
   name  = "sharepairs-dev-lambda-custom-policy"
-  role  = data.aws_iam_role.lambda_execution.id
+  role  = local.lambda_execution_role_name
 
   policy = jsonencode({
     Version = "2012-10-17"

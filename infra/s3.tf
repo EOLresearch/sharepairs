@@ -52,7 +52,7 @@ resource "aws_kms_key" "s3" {
         Sid    = "Allow Lambda to use key"
         Effect = "Allow"
         Principal = {
-          AWS = data.aws_iam_role.lambda_execution.arn
+          AWS = local.lambda_execution_role_arn
         }
         Action = [
           "kms:Decrypt",

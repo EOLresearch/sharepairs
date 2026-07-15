@@ -55,7 +55,7 @@ data "archive_file" "websocket" {
 
 resource "aws_lambda_function" "websocket" {
   function_name = "sharepairs-dev-websocket"
-  role          = data.aws_iam_role.lambda_execution.arn
+  role          = local.lambda_execution_role_arn
   handler       = "functions/websocket/index.handler"
   runtime       = "nodejs20.x"
   timeout       = 30

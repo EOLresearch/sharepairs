@@ -28,7 +28,7 @@ data "archive_file" "upload_url" {
 
 resource "aws_lambda_function" "upload_url" {
   function_name = "sharepairs-dev-upload-url"
-  role          = data.aws_iam_role.lambda_execution.arn
+  role          = local.lambda_execution_role_arn
   handler       = "functions/files/upload-url.handler"
   runtime       = "nodejs20.x"
   timeout       = 30
@@ -74,7 +74,7 @@ data "archive_file" "download_url" {
 
 resource "aws_lambda_function" "download_url" {
   function_name = "sharepairs-dev-download-url"
-  role          = data.aws_iam_role.lambda_execution.arn
+  role          = local.lambda_execution_role_arn
   handler       = "functions/files/download-url.handler"
   runtime       = "nodejs20.x"
   timeout       = 30
@@ -121,7 +121,7 @@ data "archive_file" "distress_submit" {
 
 resource "aws_lambda_function" "distress_submit" {
   function_name = "sharepairs-dev-distress-submit"
-  role          = data.aws_iam_role.lambda_execution.arn
+  role          = local.lambda_execution_role_arn
   handler       = "functions/distress/submit.handler"
   runtime       = "nodejs20.x"
   timeout       = 30
@@ -169,7 +169,7 @@ data "archive_file" "distress_worker" {
 
 resource "aws_lambda_function" "distress_worker" {
   function_name = "sharepairs-dev-distress-worker"
-  role          = data.aws_iam_role.lambda_execution.arn
+  role          = local.lambda_execution_role_arn
   handler       = "functions/distress/worker.handler"
   runtime       = "nodejs20.x"
   timeout       = 60  # Longer timeout for email sending
@@ -234,7 +234,7 @@ data "archive_file" "api" {
 
 resource "aws_lambda_function" "api" {
   function_name = "sharepairs-dev-api"
-  role          = data.aws_iam_role.lambda_execution.arn
+  role          = local.lambda_execution_role_arn
   handler       = "functions/api/index.handler"
   runtime       = "nodejs20.x"
   timeout       = 30

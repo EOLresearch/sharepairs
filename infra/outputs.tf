@@ -4,7 +4,7 @@
 
 output "lambda_execution_role_arn" {
   description = "ARN of the ITS Lambda execution role (webdev-lambda-role)"
-  value       = data.aws_iam_role.lambda_execution.arn
+  value       = local.lambda_execution_role_arn
 }
 
 output "cognito_authenticated_role_arn" {
