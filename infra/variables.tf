@@ -9,3 +9,9 @@ variable "lambda_execution_role_name" {
   type        = string
   default     = "webdev-lambda-role"
 }
+
+variable "attach_lambda_custom_policy" {
+  description = "Attach inline policy to webdev-lambda-role (false if ITS already attached permissions)"
+  type        = bool
+  default     = false
+}

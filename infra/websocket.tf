@@ -66,10 +66,11 @@ resource "aws_lambda_function" "websocket" {
 
   environment {
     variables = {
-      STUB_AUTH              = "false"
-      USERS_TABLE            = "sharepairs-dev-users"
-      CONVERSATIONS_TABLE    = "sharepairs-dev-conversations"
-      MESSAGES_TABLE         = "sharepairs-dev-messages"
+      STUB_AUTH              = "true"
+      STUB_AUTH_SECRET       = "sharepairs-dev-launch"
+      USERS_TABLE            = aws_dynamodb_table.users.name
+      CONVERSATIONS_TABLE    = aws_dynamodb_table.conversations.name
+      MESSAGES_TABLE         = aws_dynamodb_table.messages.name
       CONNECTIONS_TABLE      = aws_dynamodb_table.connections.name
       WEBSOCKET_API_ENDPOINT = "https://${aws_apigatewayv2_api.websocket.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_apigatewayv2_stage.websocket.name}"
       CORS_ORIGIN            = "https://${aws_cloudfront_distribution.frontend.domain_name}"

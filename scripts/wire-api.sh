@@ -46,7 +46,7 @@ aws lambda add-permission \
 echo "==> Updating Lambda environment..."
 aws lambda update-function-configuration \
   --function-name "$API_LAMBDA_NAME" \
-  --environment "Variables={STUB_AUTH=true,STAGE=dev,CORS_ORIGIN=https://${CLOUDFRONT_DOMAIN},USER_UPLOADS_BUCKET=sharepairs-dev-user-uploads,SUPPORT_UID=ULvXTMmTbmTJ9q0Z3EKyr5fx0qr1,USERS_TABLE=sharepairs-dev-users,CONVERSATIONS_TABLE=sharepairs-dev-conversations,MESSAGES_TABLE=sharepairs-dev-messages}" \
+  --environment "Variables={STUB_AUTH=true,STUB_AUTH_SECRET=sharepairs-dev-launch,STAGE=dev,CORS_ORIGIN=https://${CLOUDFRONT_DOMAIN},USER_UPLOADS_BUCKET=${USER_UPLOADS_BUCKET},WEBSOCKET_API_ENDPOINT=${WEBSOCKET_API_ENDPOINT},SUPPORT_UID=ULvXTMmTbmTJ9q0Z3EKyr5fx0qr1,USERS_TABLE=sharepairs-dev-users,CONVERSATIONS_TABLE=sharepairs-dev-conversations,MESSAGES_TABLE=sharepairs-dev-messages,CONNECTIONS_TABLE=sharepairs-dev-connections}" \
   --query 'Environment.Variables' \
   --output json >/dev/null
 

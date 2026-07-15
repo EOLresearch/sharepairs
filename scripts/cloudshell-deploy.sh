@@ -21,7 +21,7 @@ done
 
 echo "============================================"
 echo " Share Pairs — CloudShell deploy"
-echo " Region: ${AWS_REGION:-us-east-2}"
+echo " Region: ${AWS_REGION:-us-east-1}"
 echo "============================================"
 
 # shellcheck source=aws-env.sh

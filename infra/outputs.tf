@@ -161,6 +161,21 @@ output "websocket_management_endpoint" {
 # DynamoDB Outputs
 # ============================================================================
 
+output "users_table_name" {
+  description = "Name of the users DynamoDB table"
+  value       = aws_dynamodb_table.users.name
+}
+
+output "conversations_table_name" {
+  description = "Name of the conversations DynamoDB table"
+  value       = aws_dynamodb_table.conversations.name
+}
+
+output "messages_table_name" {
+  description = "Name of the messages DynamoDB table"
+  value       = aws_dynamodb_table.messages.name
+}
+
 output "files_table_name" {
   description = "Name of the files DynamoDB table"
   value       = aws_dynamodb_table.files.name

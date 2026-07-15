@@ -2,7 +2,7 @@
 # Print discovered AWS resource IDs for the current account/region.
 set -euo pipefail
 
-AWS_REGION="${AWS_REGION:-us-east-2}"
+AWS_REGION="${AWS_REGION:-us-east-1}"
 export AWS_REGION AWS_DEFAULT_REGION="$AWS_REGION"
 
 echo "Region:   $AWS_REGION"

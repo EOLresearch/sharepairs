@@ -31,9 +31,11 @@ data "aws_iam_role" "lambda_execution" {
 }
 
 # App-specific permissions on the shared webdev role (requires iam:PutRolePolicy).
+# Skip if ITS already attached permissions (attach_lambda_custom_policy=false).
 resource "aws_iam_role_policy" "lambda_custom" {
-  name = "sharepairs-dev-lambda-custom-policy"
-  role = data.aws_iam_role.lambda_execution.id
+  count = var.attach_lambda_custom_policy ? 1 : 0
+  name  = "sharepairs-dev-lambda-custom-policy"
+  role  = data.aws_iam_role.lambda_execution.id
 
   policy = jsonencode({
     Version = "2012-10-17"

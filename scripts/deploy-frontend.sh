@@ -22,6 +22,10 @@ if [ "$SKIP_BUILD" = false ]; then
   echo "==> Installing dependencies..."
   npm ci
   echo "==> Building React app..."
+  if [ -n "${WEBSOCKET_API_ENDPOINT:-}" ]; then
+    export REACT_APP_WS_URL="${WEBSOCKET_API_ENDPOINT/https:\/\//wss://}"
+    echo "    REACT_APP_WS_URL=$REACT_APP_WS_URL"
+  fi
   npm run build
 else
   echo "==> Skipping build (using existing build/ directory)"
