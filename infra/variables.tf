@@ -15,3 +15,9 @@ variable "attach_lambda_custom_policy" {
   type        = bool
   default     = false
 }
+
+variable "attach_cognito_authenticated_role" {
+  description = "Attach Cognito identity pool to authenticated IAM role (requires iam:PassRole on that role ARN)"
+  type        = bool
+  default     = false
+}

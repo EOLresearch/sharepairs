@@ -253,6 +253,7 @@ resource "aws_cognito_identity_pool" "main" {
 # ============================================================================
 
 resource "aws_cognito_identity_pool_roles_attachment" "main" {
+  count            = var.attach_cognito_authenticated_role ? 1 : 0
   identity_pool_id = aws_cognito_identity_pool.main.id
 
   roles = {

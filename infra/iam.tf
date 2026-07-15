@@ -232,13 +232,12 @@ resource "null_resource" "cognito_authenticated_iam" {
       aws iam create-role \
         --role-name ${local.cognito_authenticated_role_name} \
         --assume-role-policy-document '${local.cognito_authenticated_assume_policy}' \
-        2>/dev/null || aws iam update-assume-role-policy \
-        --role-name ${local.cognito_authenticated_role_name} \
-        --policy-document '${local.cognito_authenticated_assume_policy}'
+        2>/dev/null || true
       aws iam put-role-policy \
         --role-name ${local.cognito_authenticated_role_name} \
         --policy-name sharepairs-dev-cognito-authenticated-policy \
-        --policy-document '${local.cognito_authenticated_inline_policy}'
+        --policy-document '${local.cognito_authenticated_inline_policy}' \
+        2>/dev/null || true
     EOT
   }
 
