@@ -1,11 +1,12 @@
 import './welcomemessage.css';
 import { useState } from 'react';
-const simpaticoLogo = `${process.env.PUBLIC_URL}/sharepairslogo.svg`;
 import StudySupportMessage from './StudySupportMessage';
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import { translate } from '../../helpers/translate';
 import en from '../../translations/en';
 import tr from '../../translations/tr';
+
+const simpaticoLogo = `${process.env.PUBLIC_URL}/sharepairslogo.svg`;
 
 function WelcomeMessage({ userData, setShowWelcomeMessage, language, setLanguage }) {
   const t = language === 'tr' ? tr : en;
