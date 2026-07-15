@@ -255,7 +255,7 @@ resource "aws_lambda_function" "api" {
 
   tags = {
     Name    = "sharepairs-dev-api"
-    Purpose = "REST API for auth, messages, and conversations"
+    Purpose = "REST API for auth messages and conversations"
   }
 }
 
