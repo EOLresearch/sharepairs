@@ -1,6 +1,6 @@
 import './welcomemessage.css';
 import { useState } from 'react';
-import simpaticoLogo from '../../assets/sharepairslogo.png';
+const simpaticoLogo = `${process.env.PUBLIC_URL}/sharepairslogo.svg`;
 import StudySupportMessage from './StudySupportMessage';
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import { translate } from '../../helpers/translate';

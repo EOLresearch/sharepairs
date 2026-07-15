@@ -1,8 +1,8 @@
 import React from 'react';
 import { RxCaretRight } from 'react-icons/rx';
 import { IconContext } from 'react-icons';
-import sharepairImg from '../../../assets/eardpairtransparentbg.png';
-import supportImg from '../../../assets/simpaticologogreenbg.jpg';
+const sharepairImg = `${process.env.PUBLIC_URL}/eardpairtransparentbg.svg`;
+const supportImg = `${process.env.PUBLIC_URL}/simpaticologogreenbg.svg`;
 import {
   createSupportConvoIfMissing,
   getSupportConvoIfExists,

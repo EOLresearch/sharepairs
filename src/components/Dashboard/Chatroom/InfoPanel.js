@@ -1,5 +1,5 @@
 import React from 'react';
-import simpaticoLogo from '../../../assets/eardpairtransparentbg.png';
+const simpaticoLogo = `${process.env.PUBLIC_URL}/eardpairtransparentbg.svg`;
 import StartConversationButton from './StartConversationButton';
 import en from '../../../translations/en';
 import tr from '../../../translations/tr';
