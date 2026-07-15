@@ -65,7 +65,7 @@ resource "aws_kms_key" "s3" {
         Sid    = "Allow Cognito users to use key"
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.cognito_authenticated.arn
+          AWS = local.cognito_authenticated_role_arn
         }
         Action = [
           "kms:Decrypt",

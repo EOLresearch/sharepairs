@@ -155,14 +155,14 @@ resource "aws_iam_role_policy" "lambda_custom" {
 #
 # ============================================================================
 
-resource "aws_iam_role" "cognito_authenticated" {
-  provider = aws.no_default_tags
-  name     = "sharepairs-dev-cognito-authenticated-role"
+# ============================================================================
+# Cognito Authenticated Role (AWS CLI — radiology-admin-role lacks iam:ListRolePolicies)
+# ============================================================================
+# Terraform's aws_iam_role resource refreshes via ListRolePolicies after create.
+# We provision via AWS CLI (create-role / put-role-policy) and reference a known ARN.
 
-  # This policy says "Cognito Identity service can assume this role for authenticated users"
-  # Note: We reference the identity pool ID here, which creates a dependency.
-  # Terraform will handle the creation order correctly.
-  assume_role_policy = jsonencode({
+locals {
+  cognito_authenticated_assume_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -182,18 +182,11 @@ resource "aws_iam_role" "cognito_authenticated" {
       }
     ]
   })
-}
 
-# Custom policy for authenticated users (VERY LEAN - only what users need)
-resource "aws_iam_role_policy" "cognito_authenticated" {
-  name = "sharepairs-dev-cognito-authenticated-policy"
-  role = aws_iam_role.cognito_authenticated.id
-
-  policy = jsonencode({
+  cognito_authenticated_inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        # Users can only upload to their own folder in S3
         Effect = "Allow"
         Action = [
           "s3:PutObject",
@@ -212,12 +205,11 @@ resource "aws_iam_role_policy" "cognito_authenticated" {
         Resource = aws_s3_bucket.user_uploads.arn
         Condition = {
           StringLike = {
-            "s3:prefix" = "$${aws:userid}/*"  # Only their folder (escaped for Terraform)
+            "s3:prefix" = "$${aws:userid}/*"
           }
         }
       },
       {
-        # Users can get their Cognito identity (required)
         Effect = "Allow"
         Action = [
           "cognito-identity:GetId",
@@ -227,5 +219,29 @@ resource "aws_iam_role_policy" "cognito_authenticated" {
       }
     ]
   })
+}
+
+resource "null_resource" "cognito_authenticated_iam" {
+  triggers = {
+    assume_policy = local.cognito_authenticated_assume_policy
+    inline_policy = local.cognito_authenticated_inline_policy
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws iam create-role \
+        --role-name ${local.cognito_authenticated_role_name} \
+        --assume-role-policy-document '${local.cognito_authenticated_assume_policy}' \
+        2>/dev/null || aws iam update-assume-role-policy \
+        --role-name ${local.cognito_authenticated_role_name} \
+        --policy-document '${local.cognito_authenticated_assume_policy}'
+      aws iam put-role-policy \
+        --role-name ${local.cognito_authenticated_role_name} \
+        --policy-name sharepairs-dev-cognito-authenticated-policy \
+        --policy-document '${local.cognito_authenticated_inline_policy}'
+    EOT
+  }
+
+  depends_on = [aws_cognito_identity_pool.main]
 }
 

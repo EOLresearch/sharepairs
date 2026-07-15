@@ -9,7 +9,7 @@ output "lambda_execution_role_arn" {
 
 output "cognito_authenticated_role_arn" {
   description = "ARN of the Cognito authenticated role (use this when creating Cognito Identity Pool)"
-  value       = aws_iam_role.cognito_authenticated.arn
+  value       = local.cognito_authenticated_role_arn
 }
 
 # ============================================================================

@@ -6,4 +6,7 @@ locals {
   cognito_domain   = "sharepairs-${local.account_id}-auth"
   # CloudShell has ~1GB home; keep Lambda zip artifacts in /tmp.
   lambda_zip_dir   = "/tmp/sharepairs-lambda-zips"
+
+  cognito_authenticated_role_name = "sharepairs-dev-cognito-authenticated-role"
+  cognito_authenticated_role_arn    = "arn:aws:iam::${local.account_id}:role/${local.cognito_authenticated_role_name}"
 }
