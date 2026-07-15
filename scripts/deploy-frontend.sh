@@ -26,7 +26,8 @@ if [ "$SKIP_BUILD" = false ]; then
     export REACT_APP_WS_URL="${WEBSOCKET_API_ENDPOINT/https:\/\//wss://}"
     echo "    REACT_APP_WS_URL=$REACT_APP_WS_URL"
   fi
-  npm run build
+  # CloudShell sets CI=true, which makes CRA treat ESLint warnings as errors.
+  CI=false npm run build
 else
   echo "==> Skipping build (using existing build/ directory)"
   [ -d build ] || { echo "No build/ directory. Run without --skip-build."; exit 1; }
