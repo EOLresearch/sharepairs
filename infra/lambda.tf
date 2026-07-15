@@ -13,7 +13,7 @@
 data "archive_file" "upload_url" {
   type        = "zip"
   source_dir  = "${path.module}/../backend"
-  output_path = "${path.module}/../backend/functions/files/upload-url.zip"
+  output_path = "${local.lambda_zip_dir}/upload-url.zip"
   excludes = [
     "*.zip",
     ".build/**",
@@ -59,7 +59,7 @@ resource "aws_lambda_function" "upload_url" {
 data "archive_file" "download_url" {
   type        = "zip"
   source_dir  = "${path.module}/../backend"
-  output_path = "${path.module}/../backend/functions/files/download-url.zip"
+  output_path = "${local.lambda_zip_dir}/download-url.zip"
   excludes = [
     "*.zip",
     ".build/**",
@@ -105,7 +105,7 @@ resource "aws_lambda_function" "download_url" {
 data "archive_file" "distress_submit" {
   type        = "zip"
   source_dir  = "${path.module}/../backend"
-  output_path = "${path.module}/../backend/functions/distress/submit.zip"
+  output_path = "${local.lambda_zip_dir}/distress-submit.zip"
   excludes = [
     "*.zip",
     ".build/**",
@@ -153,7 +153,7 @@ resource "aws_lambda_function" "distress_submit" {
 data "archive_file" "distress_worker" {
   type        = "zip"
   source_dir  = "${path.module}/../backend"
-  output_path = "${path.module}/../backend/functions/distress/worker.zip"
+  output_path = "${local.lambda_zip_dir}/distress-worker.zip"
   excludes = [
     "*.zip",
     ".build/**",
@@ -203,9 +203,6 @@ resource "aws_lambda_event_source_mapping" "distress_worker" {
   batch_size                         = 1  # Process one message at a time for reliability
   maximum_batching_window_in_seconds = 0  # Process immediately
   enabled                            = true
-
-  # Retry configuration
-  maximum_retry_attempts = 3  # Retry 3 times before sending to DLQ
 }
 
 # ============================================================================
@@ -215,7 +212,7 @@ resource "aws_lambda_event_source_mapping" "distress_worker" {
 data "archive_file" "api" {
   type        = "zip"
   source_dir  = "${path.module}/../backend"
-  output_path = "${path.module}/../backend/functions/api/api.zip"
+  output_path = "${local.lambda_zip_dir}/api.zip"
   excludes = [
     "*.zip",
     ".build/**",

@@ -4,8 +4,9 @@
 # ============================================================================
 
 resource "aws_iam_role" "cloudtrail" {
-  count = var.enable_auditing ? 1 : 0
-  name  = "sharepairs-cloudtrail-role"
+  provider = aws.no_default_tags
+  count    = var.enable_auditing ? 1 : 0
+  name     = "sharepairs-cloudtrail-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -19,11 +20,6 @@ resource "aws_iam_role" "cloudtrail" {
       }
     ]
   })
-
-  tags = {
-    Name    = "sharepairs-cloudtrail-role"
-    Purpose = "CloudTrail log delivery"
-  }
 }
 
 resource "aws_iam_role_policy" "cloudtrail" {
@@ -105,8 +101,9 @@ resource "aws_cloudtrail" "main" {
 }
 
 resource "aws_iam_role" "config" {
-  count = var.enable_auditing ? 1 : 0
-  name  = "sharepairs-config-role"
+  provider = aws.no_default_tags
+  count    = var.enable_auditing ? 1 : 0
+  name     = "sharepairs-config-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -120,11 +117,6 @@ resource "aws_iam_role" "config" {
       }
     ]
   })
-
-  tags = {
-    Name    = "sharepairs-config-role"
-    Purpose = "AWS Config service role"
-  }
 }
 
 resource "aws_iam_role_policy" "config" {

@@ -36,7 +36,7 @@ resource "aws_apigatewayv2_stage" "websocket" {
 data "archive_file" "websocket" {
   type        = "zip"
   source_dir  = "${path.module}/../backend"
-  output_path = "${path.module}/../backend/functions/websocket/websocket.zip"
+  output_path = "${local.lambda_zip_dir}/websocket.zip"
   excludes = [
     "*.zip",
     ".build/**",

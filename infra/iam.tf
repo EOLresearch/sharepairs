@@ -156,7 +156,8 @@ resource "aws_iam_role_policy" "lambda_custom" {
 # ============================================================================
 
 resource "aws_iam_role" "cognito_authenticated" {
-  name = "sharepairs-dev-cognito-authenticated-role"
+  provider = aws.no_default_tags
+  name     = "sharepairs-dev-cognito-authenticated-role"
 
   # This policy says "Cognito Identity service can assume this role for authenticated users"
   # Note: We reference the identity pool ID here, which creates a dependency.
@@ -181,11 +182,6 @@ resource "aws_iam_role" "cognito_authenticated" {
       }
     ]
   })
-
-  tags = {
-    Name        = "sharepairs-dev-cognito-authenticated-role"
-    Description = "Role for authenticated users to access AWS services from frontend"
-  }
 }
 
 # Custom policy for authenticated users (VERY LEAN - only what users need)
