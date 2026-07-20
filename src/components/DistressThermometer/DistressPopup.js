@@ -1,8 +1,8 @@
 import React from 'react';
 import './DistressPopup.css';
-import griefPDF from '../../assets/grief.pdf';
-import mentalHealthPDF from '../../assets/mentalhealthsupport.pdf';
-import fullResourcePDF from '../../assets/resources.pdf';
+const griefPDF = `${process.env.PUBLIC_URL}/grief.pdf`;
+const mentalHealthPDF = `${process.env.PUBLIC_URL}/mentalhealthsupport.pdf`;
+const fullResourcePDF = `${process.env.PUBLIC_URL}/resources.pdf`;
 
 const getMessageForLevel = (level) => {
   if (level >= 100) {

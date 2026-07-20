@@ -23,17 +23,20 @@
 # ============================================================================
 # Lambda execution role — ITS-provided (webdev-lambda-role)
 # ============================================================================
-# Fabrice provisioned this role; we reference it instead of creating our own.
-# Requires iam:PassRole (already granted) when creating Lambda functions.
+# Fabrice provisioned this role; we use the ARN directly (avoids iam:GetRole).
+# Requires iam:PassRole when creating Lambda functions.
 
-data "aws_iam_role" "lambda_execution" {
-  name = var.lambda_execution_role_name
+locals {
+  lambda_execution_role_arn  = var.lambda_execution_role_arn
+  lambda_execution_role_name   = element(split("/", var.lambda_execution_role_arn), 1)
 }
 
 # App-specific permissions on the shared webdev role (requires iam:PutRolePolicy).
+# Skip if ITS already attached permissions (attach_lambda_custom_policy=false).
 resource "aws_iam_role_policy" "lambda_custom" {
-  name = "sharepairs-lambda-custom-policy"
-  role = data.aws_iam_role.lambda_execution.id
+  count = var.attach_lambda_custom_policy ? 1 : 0
+  name  = "sharepairs-dev-lambda-custom-policy"
+  role  = local.lambda_execution_role_name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -152,13 +155,14 @@ resource "aws_iam_role_policy" "lambda_custom" {
 #
 # ============================================================================
 
-resource "aws_iam_role" "cognito_authenticated" {
-  name = "sharepairs-cognito-authenticated-role"
+# ============================================================================
+# Cognito Authenticated Role (AWS CLI — radiology-admin-role lacks iam:ListRolePolicies)
+# ============================================================================
+# Terraform's aws_iam_role resource refreshes via ListRolePolicies after create.
+# We provision via AWS CLI (create-role / put-role-policy) and reference a known ARN.
 
-  # This policy says "Cognito Identity service can assume this role for authenticated users"
-  # Note: We reference the identity pool ID here, which creates a dependency.
-  # Terraform will handle the creation order correctly.
-  assume_role_policy = jsonencode({
+locals {
+  cognito_authenticated_assume_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
@@ -179,22 +183,10 @@ resource "aws_iam_role" "cognito_authenticated" {
     ]
   })
 
-  tags = {
-    Name        = "sharepairs-cognito-authenticated-role"
-    Description = "Role for authenticated users to access AWS services from frontend"
-  }
-}
-
-# Custom policy for authenticated users (VERY LEAN - only what users need)
-resource "aws_iam_role_policy" "cognito_authenticated" {
-  name = "sharepairs-cognito-authenticated-policy"
-  role = aws_iam_role.cognito_authenticated.id
-
-  policy = jsonencode({
+  cognito_authenticated_inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        # Users can only upload to their own folder in S3
         Effect = "Allow"
         Action = [
           "s3:PutObject",
@@ -213,12 +205,11 @@ resource "aws_iam_role_policy" "cognito_authenticated" {
         Resource = aws_s3_bucket.user_uploads.arn
         Condition = {
           StringLike = {
-            "s3:prefix" = "$${aws:userid}/*"  # Only their folder (escaped for Terraform)
+            "s3:prefix" = "$${aws:userid}/*"
           }
         }
       },
       {
-        # Users can get their Cognito identity (required)
         Effect = "Allow"
         Action = [
           "cognito-identity:GetId",
@@ -228,5 +219,28 @@ resource "aws_iam_role_policy" "cognito_authenticated" {
       }
     ]
   })
+}
+
+resource "null_resource" "cognito_authenticated_iam" {
+  triggers = {
+    assume_policy = local.cognito_authenticated_assume_policy
+    inline_policy = local.cognito_authenticated_inline_policy
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws iam create-role \
+        --role-name ${local.cognito_authenticated_role_name} \
+        --assume-role-policy-document '${local.cognito_authenticated_assume_policy}' \
+        2>/dev/null || true
+      aws iam put-role-policy \
+        --role-name ${local.cognito_authenticated_role_name} \
+        --policy-name sharepairs-dev-cognito-authenticated-policy \
+        --policy-document '${local.cognito_authenticated_inline_policy}' \
+        2>/dev/null || true
+    EOT
+  }
+
+  depends_on = [aws_cognito_identity_pool.main]
 }
 

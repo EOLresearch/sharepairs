@@ -4,12 +4,12 @@
 
 output "lambda_execution_role_arn" {
   description = "ARN of the ITS Lambda execution role (webdev-lambda-role)"
-  value       = data.aws_iam_role.lambda_execution.arn
+  value       = local.lambda_execution_role_arn
 }
 
 output "cognito_authenticated_role_arn" {
   description = "ARN of the Cognito authenticated role (use this when creating Cognito Identity Pool)"
-  value       = aws_iam_role.cognito_authenticated.arn
+  value       = local.cognito_authenticated_role_arn
 }
 
 # ============================================================================
@@ -160,6 +160,21 @@ output "websocket_management_endpoint" {
 # ============================================================================
 # DynamoDB Outputs
 # ============================================================================
+
+output "users_table_name" {
+  description = "Name of the users DynamoDB table"
+  value       = aws_dynamodb_table.users.name
+}
+
+output "conversations_table_name" {
+  description = "Name of the conversations DynamoDB table"
+  value       = aws_dynamodb_table.conversations.name
+}
+
+output "messages_table_name" {
+  description = "Name of the messages DynamoDB table"
+  value       = aws_dynamodb_table.messages.name
+}
 
 output "files_table_name" {
   description = "Name of the files DynamoDB table"

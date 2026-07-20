@@ -4,8 +4,9 @@ import { IconContext } from "react-icons";
 import { FaArrowLeft } from 'react-icons/fa';
 import { IoPeopleCircleOutline, IoChatbubblesSharp } from "react-icons/io5";
 import { RiUserSettingsLine } from "react-icons/ri";
-import logo from '../../assets/sharepairslogo.png';
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
+
+const logo = `${process.env.PUBLIC_URL}/sharepairslogo.svg`;
 
 const NavItem = ({ identifier, icon, label, onClick, style }) => (
   <li

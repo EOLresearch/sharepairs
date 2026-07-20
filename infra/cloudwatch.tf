@@ -28,7 +28,7 @@ resource "aws_sns_topic" "alerts" {
 resource "aws_sns_topic_subscription" "email" {
   topic_arn = aws_sns_topic.alerts.arn
   protocol  = "email"
-  endpoint  = "your-email@example.com"  # TODO: Update with your email address
+  endpoint  = "jom4013@med.cornell.edu"
 }
 
 # ============================================================================

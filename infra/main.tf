@@ -20,12 +20,16 @@ terraform {
       source  = "hashicorp/archive"
       version = "~> 2.4"
     }
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
+    }
   }
 }
 
 provider "aws" {
-  region = "us-east-2"
-  
+  region = "us-east-1"
+
   default_tags {
     tags = {
       Project     = "sharepairs"
@@ -33,4 +37,10 @@ provider "aws" {
       ManagedBy   = "Terraform"
     }
   }
+}
+
+# IAM CreateRole rejects tags without iam:TagRole; radiology-admin-role lacks that permission.
+provider "aws" {
+  alias  = "no_default_tags"
+  region = "us-east-1"
 }

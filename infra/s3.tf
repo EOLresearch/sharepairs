@@ -52,7 +52,7 @@ resource "aws_kms_key" "s3" {
         Sid    = "Allow Lambda to use key"
         Effect = "Allow"
         Principal = {
-          AWS = data.aws_iam_role.lambda_execution.arn
+          AWS = local.lambda_execution_role_arn
         }
         Action = [
           "kms:Decrypt",
@@ -65,7 +65,7 @@ resource "aws_kms_key" "s3" {
         Sid    = "Allow Cognito users to use key"
         Effect = "Allow"
         Principal = {
-          AWS = aws_iam_role.cognito_authenticated.arn
+          AWS = local.cognito_authenticated_role_arn
         }
         Action = [
           "kms:Decrypt",
@@ -73,6 +73,23 @@ resource "aws_kms_key" "s3" {
           "kms:GenerateDataKey"
         ]
         Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudFront to decrypt frontend objects"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.frontend.arn
+          }
+        }
       }
     ]
   })

@@ -3,8 +3,89 @@
 # ============================================================================
 
 # ============================================================================
-# Files Table - Tracks file metadata
+# Core app tables — users, conversations, messages
 # ============================================================================
+
+resource "aws_dynamodb_table" "users" {
+  name         = "sharepairs-dev-users"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  attribute {
+    name = "email"
+    type = "S"
+  }
+
+  global_secondary_index {
+    name            = "email-index"
+    hash_key        = "email"
+    projection_type = "ALL"
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = {
+    Name    = "sharepairs-dev-users"
+    Purpose = "User profiles and stub auth"
+    HIPAA   = "Compliant"
+  }
+}
+
+resource "aws_dynamodb_table" "conversations" {
+  name         = "sharepairs-dev-conversations"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = {
+    Name    = "sharepairs-dev-conversations"
+    Purpose = "Conversation metadata and consent"
+    HIPAA   = "Compliant"
+  }
+}
+
+resource "aws_dynamodb_table" "messages" {
+  name         = "sharepairs-dev-messages"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "conversation_id"
+  range_key    = "message_id"
+
+  attribute {
+    name = "conversation_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "message_id"
+    type = "S"
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = {
+    Name    = "sharepairs-dev-messages"
+    Purpose = "Chat messages"
+    HIPAA   = "Compliant"
+  }
+}
+
 
 resource "aws_dynamodb_table" "files" {
   name           = "sharepairs-dev-files"

@@ -36,7 +36,7 @@ resource "aws_apigatewayv2_stage" "websocket" {
 data "archive_file" "websocket" {
   type        = "zip"
   source_dir  = "${path.module}/../backend"
-  output_path = "${path.module}/../backend/functions/websocket/websocket.zip"
+  output_path = "${local.lambda_zip_dir}/websocket.zip"
   excludes = [
     "*.zip",
     ".build/**",
@@ -55,7 +55,7 @@ data "archive_file" "websocket" {
 
 resource "aws_lambda_function" "websocket" {
   function_name = "sharepairs-dev-websocket"
-  role          = data.aws_iam_role.lambda_execution.arn
+  role          = local.lambda_execution_role_arn
   handler       = "functions/websocket/index.handler"
   runtime       = "nodejs20.x"
   timeout       = 30
@@ -66,10 +66,11 @@ resource "aws_lambda_function" "websocket" {
 
   environment {
     variables = {
-      STUB_AUTH              = "false"
-      USERS_TABLE            = "sharepairs-dev-users"
-      CONVERSATIONS_TABLE    = "sharepairs-dev-conversations"
-      MESSAGES_TABLE         = "sharepairs-dev-messages"
+      STUB_AUTH              = "true"
+      STUB_AUTH_SECRET       = "sharepairs-dev-launch"
+      USERS_TABLE            = aws_dynamodb_table.users.name
+      CONVERSATIONS_TABLE    = aws_dynamodb_table.conversations.name
+      MESSAGES_TABLE         = aws_dynamodb_table.messages.name
       CONNECTIONS_TABLE      = aws_dynamodb_table.connections.name
       WEBSOCKET_API_ENDPOINT = "https://${aws_apigatewayv2_api.websocket.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_apigatewayv2_stage.websocket.name}"
       CORS_ORIGIN            = "https://${aws_cloudfront_distribution.frontend.domain_name}"

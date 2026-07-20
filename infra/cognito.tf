@@ -253,10 +253,13 @@ resource "aws_cognito_identity_pool" "main" {
 # ============================================================================
 
 resource "aws_cognito_identity_pool_roles_attachment" "main" {
+  count            = var.attach_cognito_authenticated_role ? 1 : 0
   identity_pool_id = aws_cognito_identity_pool.main.id
 
   roles = {
-    authenticated = aws_iam_role.cognito_authenticated.arn
+    authenticated = local.cognito_authenticated_role_arn
   }
+
+  depends_on = [null_resource.cognito_authenticated_iam]
 }
 

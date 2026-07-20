@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Shared AWS resource IDs for deploy scripts.
-# Defaults: us-east-2, account discovered at runtime via AWS CLI.
+# Defaults: us-east-1, account discovered at runtime via AWS CLI.
 #
 # Override before running, e.g.:
-#   export AWS_REGION=us-east-2
+#   export AWS_REGION=us-east-1
 #   export FRONTEND_BUCKET=my-bucket
 
-: "${AWS_REGION:=us-east-2}"
+: "${AWS_REGION:=us-east-1}"
 : "${AWS_ACCOUNT_ID:=562395967936}"
 : "${PROJECT_PREFIX:=sharepairs-dev}"
 
@@ -53,15 +53,27 @@ _discover_bucket() {
 }
 
 _discover_cloudfront() {
+  # Bucket is account-prefixed: sharepairs-dev-<account>-frontend
+  # so do not require the literal substring "sharepairs-dev-frontend".
   aws cloudfront list-distributions \
-    --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, '${PROJECT_PREFIX}-frontend')].{Id:Id,Domain:DomainName} | [0]" \
     --output json 2>/dev/null | python3 -c "
 import json, sys
+prefix = '${PROJECT_PREFIX}'
 try:
-  d = json.load(sys.stdin)
-  if d and d.get('Id'):
-    print(d['Id'])
-    print(d['Domain'])
+  data = json.load(sys.stdin)
+  items = (data.get('DistributionList') or {}).get('Items') or []
+  for d in items:
+    origins = ((d.get('Origins') or {}).get('Items')) or []
+    origin_hit = any(
+      prefix in (o.get('DomainName') or '') and 'frontend' in (o.get('DomainName') or '')
+      for o in origins
+    )
+    comment = (d.get('Comment') or '').lower()
+    comment_hit = 'share' in comment or 'sharepairs' in comment
+    if origin_hit or comment_hit:
+      print(d['Id'])
+      print(d['DomainName'])
+      break
 except Exception:
   pass
 " 2>/dev/null
@@ -117,11 +129,17 @@ else
   : "${API_GATEWAY_ENDPOINT:=$(_tf api_gateway_endpoint)}"
 fi
 
+: "${USER_UPLOADS_BUCKET:=$(_tf user_uploads_bucket_name)}"
+: "${USER_UPLOADS_BUCKET:=${PROJECT_PREFIX}-${AWS_ACCOUNT_ID}-user-uploads}"
+
+: "${WEBSOCKET_API_ENDPOINT:=$(_tf websocket_api_endpoint)}"
+
 : "${API_GATEWAY_STAGE:=prod}"
 
 export API_GATEWAY_ID API_GATEWAY_ENDPOINT
 export CLOUDFRONT_DISTRIBUTION_ID CLOUDFRONT_DOMAIN FRONTEND_BUCKET
 export API_LAMBDA_NAME API_GATEWAY_STAGE AWS_ACCOUNT_ID PROJECT_PREFIX
+export USER_UPLOADS_BUCKET WEBSOCKET_API_ENDPOINT
 
 # Fail fast with a helpful message if core resources are missing.
 _missing=()
