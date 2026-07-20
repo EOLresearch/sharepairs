@@ -53,15 +53,27 @@ _discover_bucket() {
 }
 
 _discover_cloudfront() {
+  # Bucket is account-prefixed: sharepairs-dev-<account>-frontend
+  # so do not require the literal substring "sharepairs-dev-frontend".
   aws cloudfront list-distributions \
-    --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, '${PROJECT_PREFIX}-frontend')].{Id:Id,Domain:DomainName} | [0]" \
     --output json 2>/dev/null | python3 -c "
 import json, sys
+prefix = '${PROJECT_PREFIX}'
 try:
-  d = json.load(sys.stdin)
-  if d and d.get('Id'):
-    print(d['Id'])
-    print(d['Domain'])
+  data = json.load(sys.stdin)
+  items = (data.get('DistributionList') or {}).get('Items') or []
+  for d in items:
+    origins = ((d.get('Origins') or {}).get('Items')) or []
+    origin_hit = any(
+      prefix in (o.get('DomainName') or '') and 'frontend' in (o.get('DomainName') or '')
+      for o in origins
+    )
+    comment = (d.get('Comment') or '').lower()
+    comment_hit = 'share' in comment or 'sharepairs' in comment
+    if origin_hit or comment_hit:
+      print(d['Id'])
+      print(d['DomainName'])
+      break
 except Exception:
   pass
 " 2>/dev/null

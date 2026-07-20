@@ -11,7 +11,16 @@ import * as consentHandlers from './handlers/consent.js';
 import * as conversationsHandlers from './handlers/conversations.js';
 
 function getPath(event) {
-  return event.rawPath || event.path || '';
+  // HTTP API payload 2.0: rawPath. Payload 1.0 / some proxies: path may include stage.
+  let path = event.rawPath || event.path || event.requestContext?.http?.path || '';
+  const stage = event.requestContext?.stage;
+  if (stage && stage !== '$default') {
+    if (path === `/${stage}`) path = '/';
+    else if (path.startsWith(`/${stage}/`)) path = path.slice(stage.length + 1);
+  }
+  // Also strip a bare /prod prefix if stage metadata is missing
+  if (path.startsWith('/prod/')) path = path.slice('/prod'.length);
+  return path;
 }
 
 function getMethod(event) {
@@ -52,5 +61,6 @@ export async function route(event) {
     }
   }
 
+  console.warn('No route match', { method, path, rawPath: event.rawPath, eventPath: event.path });
   return error('Not Found', 404);
 }
