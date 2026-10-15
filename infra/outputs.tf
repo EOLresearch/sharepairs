@@ -176,6 +176,11 @@ output "messages_table_name" {
   value       = aws_dynamodb_table.messages.name
 }
 
+output "prompts_table_name" {
+  description = "Prompts DynamoDB table name"
+  value       = aws_dynamodb_table.prompts.name
+}
+
 output "files_table_name" {
   description = "Name of the files DynamoDB table"
   value       = aws_dynamodb_table.files.name
@@ -189,6 +194,11 @@ output "audit_logs_table_name" {
 output "distress_events_table_name" {
   description = "Name of the distress events DynamoDB table"
   value       = aws_dynamodb_table.distress_events.name
+}
+
+output "assessments_table_name" {
+  description = "Name of the assessments DynamoDB table"
+  value       = aws_dynamodb_table.assessments.name
 }
 
 # ============================================================================

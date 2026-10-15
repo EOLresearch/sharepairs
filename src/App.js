@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import './App.css';
 import { useAuth } from './components/UserAuth/AuthContext';
 import AppLayout from './AppLayout';
@@ -9,49 +9,48 @@ import LoadingScreen from './LoadingScreen';
 
 function App() {
   const { user, userData, authLoading } = useAuth();
-  const [language, setLanguage] = useState('en');
 
-  const isVerified = user?.emailVerified ?? false;
+  // Study default: verification gate is off (matches REQUIRE_EMAIL_VERIFICATION=false on Lambda).
+  // Only show VerifyEmail when explicitly enabled in the frontend build.
+  const requireEmailVerification =
+    String(process.env.REACT_APP_REQUIRE_EMAIL_VERIFICATION || '').toLowerCase() === 'true';
+  const isVerified = user?.emailVerified !== false;
 
   if (authLoading) {
     return (
-      <AppLayout language={language} setLanguage={setLanguage}>
+      <AppLayout>
         <LoadingScreen />
       </AppLayout>
     );
   }
 
-  // Not signed in
   if (!user) {
     return (
-      <AppLayout language={language} setLanguage={setLanguage}>
-        <UserAuth language={language} setLanguage={setLanguage} />
+      <AppLayout>
+        <UserAuth />
       </AppLayout>
     );
   }
 
-  // Signed in but not verified
-  if (!isVerified) {
+  if (requireEmailVerification && !isVerified) {
     return (
-      <AppLayout language={language} setLanguage={setLanguage}>
-        <VerifyEmail language={language} />
+      <AppLayout>
+        <VerifyEmail />
       </AppLayout>
     );
   }
 
-  // Verified but profile still loading
   if (!userData) {
     return (
-      <AppLayout language={language} setLanguage={setLanguage}>
+      <AppLayout>
         <LoadingScreen />
       </AppLayout>
     );
   }
 
-  // Verified and profile loaded
   return (
-    <AppLayout language={language} setLanguage={setLanguage}>
-      <Dashboard language={language} setLanguage={setLanguage} />
+    <AppLayout>
+      <Dashboard />
     </AppLayout>
   );
 }

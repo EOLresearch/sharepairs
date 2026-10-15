@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import HoverTooltip from '../HoverToolTip/HoverToolTip';
 import en from '../../translations/en';
-import tr from '../../translations/tr';
 
-const DistressThermometer = ({ language, setShowDistressThermometer, handleDistressSelection }) => {
+const DistressThermometer = ({ setShowDistressThermometer, handleDistressSelection }) => {
   const [selectedValue, setSelectedValue] = useState(null);
-  const t = language === 'tr' ? tr : en;
+  const t = en;
 
   const values = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0];
 

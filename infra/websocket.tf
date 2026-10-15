@@ -67,7 +67,8 @@ resource "aws_lambda_function" "websocket" {
   environment {
     variables = {
       STUB_AUTH              = "true"
-      STUB_AUTH_SECRET       = "sharepairs-dev-launch"
+      STUB_AUTH_SECRET       = var.stub_auth_secret
+      SIMPATICO_ENV          = "study"
       USERS_TABLE            = aws_dynamodb_table.users.name
       CONVERSATIONS_TABLE    = aws_dynamodb_table.conversations.name
       MESSAGES_TABLE         = aws_dynamodb_table.messages.name

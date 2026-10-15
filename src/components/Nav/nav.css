@@ -49,20 +49,30 @@
   width: 100%;
 }
 
-.no-user-nav{
-  pointer-events: none;
-  visibility: hidden;
+.nav-body.no-user-nav {
+  display: none;
 }
 .nav-body {
-  margin-right:3rem;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  /* Logo is 10rem, inset 1rem from the left edge. Keep links clear of it. */
+  padding-left: 12rem;
 }
 
 .nav-body ul {
   all: unset;
   list-style: none;
   display: flex;
-  justify-content: right;
-  width: 100vw;
+  align-items: stretch;
+  width: auto;
+  box-sizing: border-box;
+}
+
+.nav-body ul.nav-right {
+  margin-left: auto;
 }
 
 .nav-body ul li {
@@ -71,7 +81,6 @@
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
 .nav-body ul li:hover {
@@ -80,8 +89,27 @@
   color: rgba(255, 255, 255, 0.722);
 }
 
-.nav-body ul li span {
-  margin-left: 1rem;
+.nav-body ul li.is-active {
+  background-color: #60beb4;
+  color: #fff;
+}
+
+.nav-item-label {
+  display: inline-grid;
+  justify-items: start;
+}
+
+.nav-item-label .nav-label-sizer,
+.nav-item-label .nav-label-live {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  white-space: nowrap;
+}
+
+.nav-item-label .nav-label-sizer {
+  visibility: hidden;
 }
 
 .react-icons-nav{

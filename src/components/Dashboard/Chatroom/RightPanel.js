@@ -3,7 +3,6 @@ import { RxCaretLeft, RxCaretRight } from "react-icons/rx";
 import PromptsList from './PromptsList';
 import InfoPanel from './InfoPanel';
 import en from '../../../translations/en';
-import tr from '../../../translations/tr';
 
 export default function RightPanel({
   expanded,
@@ -21,14 +20,25 @@ export default function RightPanel({
   activeConvo,
   conversations,
   setSystemMessage,
-  language,
-  hasUnread
+  hasUnread,
+  onInsertStarter,
+  isMatched = false,
+  showGettingStarted = false,
+  onDismissGettingStarted,
 }) {
-  const t = language === 'tr' ? tr : en;
+  const t = en;
 
   const renderList = () => {
     if (activeList === 'prompts') {
-      return <PromptsList prompts={userData.prompts || []} />;
+      return (
+        <PromptsList
+          activeConversation={activeConversation}
+          onInsertStarter={onInsertStarter}
+          isMatched={isMatched}
+          showGettingStarted={showGettingStarted}
+          onDismissGettingStarted={onDismissGettingStarted}
+        />
+      );
     }
 
     if (activeList === 'match') {
@@ -42,7 +52,6 @@ export default function RightPanel({
           isMutuallyConsented={activeConversation?.mutualConsent}
           setSystemMessage={setSystemMessage}
           conversations={conversations}
-          language={language}
         />
       );
     }

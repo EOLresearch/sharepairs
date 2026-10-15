@@ -94,7 +94,7 @@ const CrisisSupport = () => (
   </details>
 );
 
-export default function DistressPopup({ setShowDistressPopup, distressLevel }) {
+export default function DistressPopup({ setShowDistressPopup, distressLevel, notifyFailed }) {
   const content = getMessageForLevel(distressLevel);
 
   if (!content) return null;
@@ -103,6 +103,11 @@ export default function DistressPopup({ setShowDistressPopup, distressLevel }) {
     <div className="welcome-message-overlay">
       <div className=" distress-popup">
         <h2>You responded: {content.label}</h2>
+        {notifyFailed && (
+          <p className="distress-notify-failed" role="alert">
+            We could not notify the study team automatically. Please contact Study Support so they can follow up. Your chat remains suspended and these resources are still for you.
+          </p>
+        )}
         <p>{content.intro}</p>
 
         {content.showCrisisFirst ? (

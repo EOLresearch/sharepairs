@@ -8,6 +8,12 @@ body {
   margin: 0;
   font-size: 18px;
   font-weight: 400;
+  /* Accessible text on light / teal surfaces (WCAG-minded for older users) */
+  --text-primary: #0f1f1c;
+  --text-secondary: #1a2e2a;
+  --text-muted: #243833;
+  --text-on-teal: #071412;
+  --text-placeholder: #3a4f4a;
   /* box-sizing: border-box; */
 }
 
@@ -15,15 +21,28 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* Nav title block height — auth screens use this to optically center */
+  --app-nav-height: 9rem;
 }
 
 .nav-container {
-  flex: 0 0 auto; 
+  flex: 0 0 auto;
 }
 
 .app-inner-container {
   flex: 1;
+  min-height: 0;
   background-color: #31605b;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: stretch;
+  align-items: stretch;
+}
+
+.app-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }

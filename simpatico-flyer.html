@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simpatico study flyer</title>
+</head>
+<body>
+<!--
+  PASTE INTO DRUPAL
+  Text format: Full HTML. Paste in Source mode so the style tag is kept.
+  Copy from the style tag below through the closing simpatico-flyer div.
+-->
+<style>
+@import url("https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap");
+
+#simpatico-flyer,
+#simpatico-flyer * {
+  box-sizing: border-box;
+}
+
+#simpatico-flyer {
+  background: #f4ecd8;
+  color: #1c1c1c;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 26px 24px 18px;
+  font-family: "Nunito", "Segoe UI", "Trebuchet MS", sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+}
+
+#simpatico-flyer p,
+#simpatico-flyer ul,
+#simpatico-flyer li {
+  font-family: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+#simpatico-flyer p {
+  margin: 0;
+}
+
+#simpatico-flyer a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#simpatico-flyer .sf-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 22px 28px;
+}
+
+#simpatico-flyer .sf-main {
+  flex: 1.5 1 340px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#simpatico-flyer .sf-side {
+  flex: 0.95 1 250px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+#simpatico-flyer .sf-title {
+  margin: 0 0 12px;
+  color: #5e7a4a;
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.025em;
+  text-transform: uppercase;
+}
+
+#simpatico-flyer .sf-sub {
+  margin: 0 auto 16px;
+  max-width: 34em;
+  color: #7f9a68;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+#simpatico-flyer .sf-lead {
+  margin: 0 0 16px;
+  color: #222;
+  font-size: 16.5px;
+  font-weight: 700;
+  line-height: 1.38;
+}
+
+#simpatico-flyer .sf-lead strong {
+  font-weight: 800;
+}
+
+#simpatico-flyer .sf-prompt {
+  margin: 0 0 8px;
+  color: #5e7a4a;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+#simpatico-flyer .sf-qrrow {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+#simpatico-flyer .sf-qr {
+  display: block;
+  flex: 0 0 142px;
+  width: 142px;
+  line-height: 0;
+  background: #f4ecd8;
+}
+
+#simpatico-flyer .sf-qr svg {
+  display: block;
+  width: 142px;
+  height: 142px;
+}
+
+#simpatico-flyer .sf-illu {
+  flex: 1 1 180px;
+  min-width: 0;
+  max-width: 300px;
+}
+
+#simpatico-flyer .sf-illu svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+#simpatico-flyer .sf-meta {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+#simpatico-flyer .sf-email {
+  flex: 1 1 160px;
+  margin: 0;
+  color: #222;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.28;
+}
+
+#simpatico-flyer .sf-email a {
+  color: #1a1a1a;
+  font-size: 15.5px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+#simpatico-flyer .sf-brand {
+  flex: 0 1 auto;
+  text-align: center;
+}
+
+#simpatico-flyer .sf-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+#simpatico-flyer .sf-seal {
+  display: block;
+  width: 50px;
+  height: 50px;
+  flex: 0 0 50px;
+}
+
+#simpatico-flyer .sf-wc {
+  color: #c62828;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-align: left;
+}
+
+#simpatico-flyer .sf-med {
+  margin-top: 1px;
+  color: #e87722;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-align: left;
+}
+
+#simpatico-flyer .sf-bubbles {
+  flex: 0 0 84px;
+  width: 84px;
+  margin: 0 0 16px;
+  line-height: 0;
+}
+
+#simpatico-flyer .sf-bubbles svg {
+  display: block;
+  width: 84px;
+  height: auto;
+}
+
+#simpatico-flyer .sf-protocol {
+  margin: 4px 0 0;
+  color: #2b2b2b;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+
+#simpatico-flyer .sf-card {
+  margin: 0;
+  padding: 14px 16px 13px;
+  border: 1.5px solid #a9b49a;
+  border-radius: 16px;
+  background: #f4ecd8;
+}
+
+#simpatico-flyer .sf-card-title {
+  margin: 0 0 8px;
+  color: #678656;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+}
+
+#simpatico-flyer .sf-card ul {
+  margin: 0;
+  padding: 0 0 0 1.15em;
+  list-style: disc outside;
+}
+
+#simpatico-flyer .sf-card ul ul {
+  margin: 2px 0 0;
+  padding-left: 1.15em;
+  list-style: circle outside;
+}
+
+#simpatico-flyer .sf-card li {
+  margin: 0 0 0.45em;
+  padding: 0;
+  color: #1c1c1c;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.28;
+}
+
+#simpatico-flyer .sf-card li:last-child,
+#simpatico-flyer .sf-card ul ul li:last-child {
+  margin-bottom: 0;
+}
+
+#simpatico-flyer .sf-card ul ul li {
+  margin-bottom: 0.12em;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  #simpatico-flyer {
+    padding: 18px 14px 14px;
+  }
+
+  #simpatico-flyer .sf-title {
+    font-size: 34px;
+  }
+
+  #simpatico-flyer .sf-sub {
+    font-size: 16px;
+  }
+
+  #simpatico-flyer .sf-qr {
+    flex-basis: 112px;
+    width: 112px;
+  }
+
+  #simpatico-flyer .sf-qr svg {
+    width: 112px;
+    height: 112px;
+  }
+
+  #simpatico-flyer .sf-meta {
+    flex-wrap: wrap;
+  }
+}
+</style>
+
+<div id="simpatico-flyer">
+  <div class="sf-layout">
+    <div class="sf-main">
+      <p class="sf-title">Are you grieving<br>a loved one?</p>
+
+      <p class="sf-sub">Introducing Simpatico: A Web-Based Social Connectivity Intervention for Grief</p>
+
+      <p class="sf-lead">Researchers at Weill Cornell Medicine are enrolling participants in a research study to test <strong>Simpatico</strong>, a new online platform designed to connect people who are grieving through supportive conversation.</p>
+
+      <p class="sf-prompt">Questions about the study?<br>Scan to email Yuka:</p>
+
+      <div class="sf-qrrow">
+        <a class="sf-qr" href="mailto:yuc4033@med.cornell.edu" aria-label="Email Yuka P Childers">
+          <svg role="img" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges"><path fill="#f4ecd8" d="M0 0h37v37H0z"/><path stroke="#1a1a1a" d="M4 4.5h7m5 0h2m2 0h4m2 0h7M4 5.5h1m5 0h1m3 0h1m1 0h4m2 0h1m3 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m3 0h2m1 0h1m2 0h4m2 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m2 0h1m2 0h4m2 0h3m1 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h2m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h1m4 0h2m3 0h2m2 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M18 11.5h1m2 0h4M4 12.5h1m2 0h1m1 0h2m1 0h2m1 0h2m2 0h1m3 0h1m1 0h1m1 0h1M6 13.5h1m2 0h1m4 0h2m2 0h2m4 0h1m1 0h2m2 0h3M4 14.5h3m1 0h4m3 0h1m4 0h1m2 0h1m4 0h4M4 15.5h4m3 0h1m1 0h1m1 0h1m2 0h2m4 0h1m1 0h1m3 0h1M7 16.5h1m2 0h4m6 0h2m2 0h1m1 0h2m1 0h1M4 17.5h1m1 0h1m2 0h1m9 0h1m3 0h2m2 0h1m1 0h1m1 0h1M4 18.5h1m3 0h1m1 0h2m2 0h2m3 0h3m4 0h3m2 0h2M5 19.5h2m1 0h2m2 0h4m1 0h2m1 0h2m2 0h1m1 0h1M4 20.5h1m2 0h1m2 0h1m5 0h7m1 0h2m1 0h1m1 0h1M5 21.5h1m2 0h1m3 0h3m4 0h1m1 0h1m2 0h2m5 0h2M4 22.5h1m2 0h1m2 0h1m4 0h3m3 0h1m2 0h1m1 0h2m1 0h1m1 0h2M6 23.5h2m1 0h1m4 0h4m1 0h3m2 0h4m4 0h1M4 24.5h1m1 0h1m1 0h3m3 0h1m3 0h1m1 0h1m3 0h8M12 25.5h1m2 0h1m1 0h1m1 0h3m1 0h2m3 0h5M4 26.5h7m2 0h2m1 0h4m4 0h1m1 0h1m1 0h2m1 0h1M4 27.5h1m5 0h1m1 0h1m1 0h1m2 0h1m2 0h1m1 0h1m1 0h1m3 0h1m1 0h3M4 28.5h1m1 0h3m1 0h1m2 0h2m3 0h4m2 0h6m1 0h1M4 29.5h1m1 0h3m1 0h1m1 0h2m1 0h7m1 0h1m2 0h3m1 0h1m1 0h1M4 30.5h1m1 0h3m1 0h1m2 0h6m2 0h1m1 0h1m4 0h2m2 0h1M4 31.5h1m5 0h1m4 0h7m1 0h2m1 0h1m4 0h1M4 32.5h7m1 0h1m2 0h2m3 0h2m2 0h2m1 0h2m2 0h1"/></svg>
+        </a>
+
+        <div class="sf-illu">
+          <svg viewBox="0 0 348 158" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <g fill="none" stroke="#2c4530" stroke-linecap="round" stroke-linejoin="round">
+              <path fill="#c3d85e" stroke-width="2.6" d="M74 14c18-2 34 14 30 34 16 12 20 40 8 64-14 26-48 34-66 20-20-14-22-48-6-70-8-16 8-32 34-48z"/>
+              <path stroke-width="2.4" d="M68 16c-1-12-8-20-18-24"/>
+              <ellipse cx="44" cy="8" rx="13" ry="6.5" fill="#5f9a34" stroke-width="1.8" transform="rotate(-42 44 8)"/>
+              <path fill="#b0cc52" stroke-width="2.2" d="M40 78c-12-1-18 12-12 22 6 8 16 6 18-2 2-8 2-16-6-20z"/>
+              <path stroke-width="1.6" d="M34 90c4 5 9 5 12 1"/>
+              <circle cx="86" cy="78" r="2.5" fill="#2c4530" stroke="none"/>
+              <path stroke-width="2.2" d="M90 86c8 2 12 10 5 14"/>
+              <path stroke="#c4473c" stroke-width="2.2" d="M86 104c6 6 16 4 18-2"/>
+            </g>
+            <g transform="translate(262 0) scale(-1 1)" fill="none" stroke="#2c4530" stroke-linecap="round" stroke-linejoin="round">
+              <path fill="#e6c44c" stroke-width="2.6" d="M74 14c18-2 34 14 30 34 16 12 20 40 8 64-14 26-48 34-66 20-20-14-22-48-6-70-8-16 8-32 34-48z"/>
+              <path stroke-width="2.4" d="M68 16c-1-12-8-20-18-24"/>
+              <ellipse cx="44" cy="8" rx="13" ry="6.5" fill="#5f9a34" stroke-width="1.8" transform="rotate(-42 44 8)"/>
+              <path fill="#efd06a" stroke-width="2.2" d="M40 78c-12-1-18 12-12 22 6 8 16 6 18-2 2-8 2-16-6-20z"/>
+              <path stroke-width="1.6" d="M34 90c4 5 9 5 12 1"/>
+              <circle cx="86" cy="78" r="2.5" fill="#2c4530" stroke="none"/>
+              <path stroke-width="2.2" d="M90 86c8 2 12 10 5 14"/>
+              <path stroke="#c4473c" stroke-width="2.2" d="M86 104c6 6 16 4 18-2"/>
+            </g>
+            <path fill="#d7ee9c" stroke="#2c4530" stroke-width="2" d="M278 16c22-2 40 12 40 32 0 18-14 30-34 32l-2 14-12-16c-16-2-28-14-28-30 0-18 16-32 36-32z"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="sf-meta">
+        <p class="sf-email">Or email Yuka P Childers for<br>more information:<br><a href="mailto:yuc4033@med.cornell.edu">yuc4033@med.cornell.edu</a></p>
+        <div class="sf-brand">
+          <div class="sf-logo">
+            <svg class="sf-seal" viewBox="0 0 64 64" aria-hidden="true">
+              <circle cx="32" cy="32" r="31" fill="#b42424"/>
+              <circle cx="32" cy="32" r="26" fill="none" stroke="#f3d48a" stroke-width="1.5"/>
+              <circle cx="32" cy="32" r="23" fill="none" stroke="#f3d48a" stroke-width="0.7"/>
+              <path fill="#f3d48a" d="M18 41V27.5c4.6 2.6 9 2.6 14 0 5 2.6 9.4 2.6 14 0V41c-4.6 2.6-9 2.6-14 0-5 2.6-9.4 2.6-14 0z"/>
+              <path stroke="#b42424" stroke-width="0.9" d="M32 27.5V41"/>
+            </svg>
+            <div>
+              <div class="sf-wc">Weill Cornell</div>
+              <div class="sf-med">Medicine</div>
+            </div>
+          </div>
+          <p class="sf-protocol">Protocol #: 23-12026884</p>
+        </div>
+        <div class="sf-bubbles" aria-hidden="true">
+          <svg viewBox="0 0 96 74" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#8ec85c" stroke="#2c4530" stroke-width="2" d="M8 4h34a11 11 0 0 1 11 11v14a11 11 0 0 1-11 11H30l-8 11 1-11H16A11 11 0 0 1 5 29V15A11 11 0 0 1 16 4z"/>
+            <text x="26" y="27" text-anchor="middle" font-family="Nunito, Segoe UI, sans-serif" font-size="15" font-weight="800" fill="#243828">#</text>
+            <path fill="#9ad468" stroke="#2c4530" stroke-width="2" d="M40 20h40a12 12 0 0 1 12 12v16a12 12 0 0 1-12 12H66l-10 12 1-12H48a12 12 0 0 1-12-12V32a12 12 0 0 1 12-12z"/>
+            <path fill="#f0d056" d="M58 38c0-4.2 3.2-7 6.2-4.6 3-2.4 6.4.4 6.4 4.6 0 5.2-6.3 9.2-6.3 9.2S58 43.2 58 38z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="sf-side">
+      <div class="sf-card">
+        <p class="sf-card-title">Participation Includes</p>
+        <ul>
+          <li>Use the Simpatico web app for 2 weeks to chat with another participant who has experienced a similar loss</li>
+          <li>Completion of 3 Surveys:
+            <ul>
+              <li>Eligibility Screening</li>
+              <li>Baseline Survey</li>
+              <li>Post-Use Survey</li>
+            </ul>
+          </li>
+          <li>Entirely remote</li>
+          <li>Receive a $60 Amazon gift card for completing all parts of the study</li>
+        </ul>
+      </div>
+
+      <div class="sf-card">
+        <p class="sf-card-title">Study Eligibility</p>
+        <ul>
+          <li>You have lost a loved one within the last 6 months – 10 years</li>
+          <li>You are 18 years old or older</li>
+          <li>You live in the U.S.</li>
+          <li>You are fluent in English</li>
+          <li>You have daily, at-home internet access</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -19,6 +19,18 @@ for arg in "$@"; do
   esac
 done
 
+# CloudShell has ~1GB home disk — prefer prebuilt frontend to avoid npm ci.
+if [ -d "$ROOT/build" ] && [ "$SKIP_BUILD" = false ] && [ "${FORCE_FRONTEND_BUILD:-}" != "1" ]; then
+  echo "Found build/ — skipping frontend npm install (CloudShell disk-safe)."
+  echo "Set FORCE_FRONTEND_BUILD=1 to rebuild in CloudShell."
+  SKIP_BUILD=true
+fi
+
+# Use /tmp for npm cache (home disk is tiny in CloudShell)
+export npm_config_cache="${npm_config_cache:-/tmp/npm-cache}"
+export TMPDIR="${TMPDIR:-/tmp}"
+mkdir -p "$npm_config_cache"
+
 echo "============================================"
 echo " Share Pairs — CloudShell deploy"
 echo " Region: ${AWS_REGION:-us-east-1}"
@@ -27,6 +39,8 @@ echo "============================================"
 
 # shellcheck source=aws-env.sh
 source "$ROOT/scripts/aws-env.sh"
+# shellcheck source=require-study-secrets.sh
+source "$ROOT/scripts/require-study-secrets.sh"
 
 echo ""
 echo "Account: $(aws sts get-caller-identity --query Account --output text)"
@@ -36,15 +50,42 @@ echo ""
 
 chmod +x "$ROOT/scripts/"*.sh
 
-echo "==> Step 1/4: Deploy API Lambda (register/login/logout)"
+echo "==> Step 1/6: Deploy API Lambda (register/login/logout)"
 "$ROOT/scripts/deploy-api-lambda.sh"
 
 echo ""
-echo "==> Step 2/4: Wire API Gateway -> Lambda"
+echo "==> Step 2/6: SES sender ($SES_FROM_EMAIL)"
+# Verify FROM (+ optional recipients via SES_VERIFY_RECIPIENTS="a@x,b@y")
+if [ -n "${SES_VERIFY_RECIPIENTS:-}" ]; then
+  IFS=',' read -r -a RECIP_ARGS <<< "$SES_VERIFY_RECIPIENTS"
+  "$ROOT/scripts/setup-ses-email.sh" "${RECIP_ARGS[@]}"
+else
+  "$ROOT/scripts/setup-ses-email.sh"
+fi
+
+echo ""
+echo "==> Step 3/6: Wire API Gateway -> Lambda"
 "$ROOT/scripts/wire-api.sh"
 
 echo ""
-echo "==> Step 3/4: Wire CloudFront /api/* -> API Gateway"
+echo "==> Step 3b/6: Ensure WebSocket endpoint on API Lambda"
+"$ROOT/scripts/wire-websocket.sh"
+
+echo ""
+echo "==> Step 3c/6: Ensure prompts DynamoDB table"
+"$ROOT/scripts/ensure-prompts-table.sh"
+
+echo ""
+echo "==> Step 3d/6: Ensure assessments DynamoDB table"
+"$ROOT/scripts/ensure-assessments-table.sh"
+
+echo ""
+echo "==> Step 4/6: Ensure Study Support login ($SUPPORT_EMAIL)"
+export SUPPORT_EMAIL SUPPORT_PASSWORD
+"$ROOT/scripts/ensure-support-user.sh"
+
+echo ""
+echo "==> Step 5/6: Wire CloudFront /api/* -> API Gateway"
 "$ROOT/scripts/wire-cloudfront-api.sh"
 
 if [ "$WIRE_ONLY" = true ]; then
@@ -55,7 +96,7 @@ if [ "$WIRE_ONLY" = true ]; then
 fi
 
 echo ""
-echo "==> Step 4/4: Build + publish frontend"
+echo "==> Step 6/6: Build + publish frontend"
 if [ "$SKIP_BUILD" = true ]; then
   "$ROOT/scripts/deploy-frontend.sh" --skip-build
 else
@@ -66,7 +107,9 @@ echo ""
 echo "============================================"
 echo " All steps submitted."
 echo " App URL: https://$CLOUDFRONT_DOMAIN"
+echo " Verification From: $SES_FROM_EMAIL"
+echo " Study Support login: $SUPPORT_EMAIL (password from SUPPORT_PASSWORD)"
 echo ""
-echo " CloudFront /api/* behavior may take a few"
-echo " minutes to propagate. Then test login/register."
+echo " Confirm SES FROM is Verified (check that inbox for AWS link)."
+echo " While SES is in sandbox, also verify each tester's email."
 echo "============================================"

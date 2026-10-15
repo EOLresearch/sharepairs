@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { FaEnvelope, FaLock } from 'react-icons/fa';
 import { useAuth } from './AuthContext';
+import { isLocalApp } from '../../helpers/localEnv';
 import en from '../../translations/en';
-import tr from '../../translations/tr';
 
-const LoginForm = ({ setError, handleToggleView, language }) => {
+const LoginForm = ({ setError, handleToggleView }) => {
   const { login } = useAuth();
+  const local = isLocalApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const t = language === 'tr' ? tr : en;
+  const t = en;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,13 +24,18 @@ const LoginForm = ({ setError, handleToggleView, language }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Unverified users stay signed in; App gates them to VerifyEmail
       await login(email, password);
     } catch (err) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      const msg = String(err?.message || '').toLowerCase();
+      if (
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/wrong-password' ||
+        msg.includes('invalid credentials') ||
+        msg.includes('invalid email or password')
+      ) {
         setError(t.auth.error_invalid_credentials);
       } else {
-        setError(t.auth.error_generic);
+        setError(err?.message || t.auth.error_generic);
       }
       setLoading(false);
       return;
@@ -42,10 +49,11 @@ const LoginForm = ({ setError, handleToggleView, language }) => {
         <h1>{t.auth.login_title}</h1>
 
         <div className='input-container'>
-          <i className="fas fa-envelope"></i>
+          <FaEnvelope aria-hidden="true" />
           <input
             id="email"
-            type="email"
+            type="text"
+            autoComplete="username"
             placeholder={t.auth.email_placeholder}
             value={email}
             onChange={handleChange}
@@ -55,10 +63,11 @@ const LoginForm = ({ setError, handleToggleView, language }) => {
         </div>
 
         <div className='input-container'>
-          <i className="fas fa-lock"></i>
+          <FaLock aria-hidden="true" />
           <input
             id="password"
             type="password"
+            autoComplete="current-password"
             placeholder={t.auth.password_placeholder}
             value={password}
             onChange={handleChange}
@@ -72,13 +81,13 @@ const LoginForm = ({ setError, handleToggleView, language }) => {
             {loading ? t.auth.logging_in : t.auth.login_button}
           </button>
 
-          <button className='forgot-pass-btn' type="button" onClick={() => handleToggleView('forgot')}>
-            {t.auth.forgot_password}
-          </button>
+          {!local && <p className="login-hint">{t.auth.study_login_hint}</p>}
 
-          <button type="button" onClick={() => handleToggleView('register')}>
-            {t.auth.join_prompt}<strong>{t.auth.join_now}</strong>
-          </button>
+          {local && (
+            <button type="button" onClick={() => handleToggleView('register')}>
+              {t.auth.join_prompt}<strong>{t.auth.join_now}</strong>
+            </button>
+          )}
         </div>
       </form>
     </div>
@@ -88,7 +97,6 @@ const LoginForm = ({ setError, handleToggleView, language }) => {
 LoginForm.propTypes = {
   setError: PropTypes.func.isRequired,
   handleToggleView: PropTypes.func.isRequired,
-  language: PropTypes.string.isRequired
 };
 
 export default LoginForm;

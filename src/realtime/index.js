@@ -8,3 +8,5 @@ export {
   getLastSeenByConversation,
   getPresenceMap,
 } from './client';
+
+export { RealtimeProvider } from './RealtimeProvider';

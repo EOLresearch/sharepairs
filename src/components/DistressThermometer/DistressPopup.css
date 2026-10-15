@@ -95,3 +95,11 @@
 .distress-popup button:hover {
   background-color: #a0001c;
 }
+
+.distress-popup .distress-notify-failed {
+  background: #ffe3e0;
+  border-left: 4px solid #b00020;
+  padding: 0.75rem 1rem;
+  color: #8a2a22;
+  font-weight: 600;
+}

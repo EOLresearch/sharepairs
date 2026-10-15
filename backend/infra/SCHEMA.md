@@ -12,7 +12,7 @@ Table names are env-driven: `USERS_TABLE`, `CONVERSATIONS_TABLE`, `MESSAGES_TABL
 | password_hash  | String |       | Stub auth hashed password      |
 | display_name   | String |       |                                |
 | photo_url      | String |       | Avatar URL                     |
-| preferred_language | String |   | `en` or `tr`                   |
+| preferred_language | String |   | `en`                           |
 | timezone       | String |       |                                |
 | is_admin       | Boolean|       | Never set via public register  |
 | email_verified | Boolean|       | Explicit false until confirmed; missing = verified (legacy seeds) |
@@ -58,6 +58,7 @@ Table names are env-driven: `USERS_TABLE`, `CONVERSATIONS_TABLE`, `MESSAGES_TABL
 | last_msg_at   | Number |     | Unix ms                        |
 | last_msg_preview | String |   |                                |
 | last_sender_id| String |     |                                |
+| intervention_start_at | Number | | Write-once Unix ms of the first real peer message in this match conversation. Starts the shared 56-day follow-up clock for both participants. Not set by support threads, match, or consent. |
 | created_at    | Number |     |                                |
 | updated_at    | Number |     |                                |
 
@@ -77,3 +78,23 @@ Optional GSI for “conversations for user”: `user-id-index` PK `user_id`. If 
 | created_at          | Number |     | Unix ms            |
 
 No separate consent_requests table; consent is stored on the conversation document.
+
+## prompts
+
+| Attribute   | Type    | Key | Description                          |
+|-------------|---------|-----|--------------------------------------|
+| id          | String  | PK  | UUID                                 |
+| text        | String  |     | English prompt body                  |
+| mode        | String  |     | `starter` \| `idea`                  |
+| category    | String  |     | greetings, checking_in, everyday_life, shared_experience, encouragement, closing |
+| active      | Boolean |     | Inactive hidden from chat            |
+| sort_order  | Number  |     | Display order within category        |
+| impressions | Number |     | Times shown in chat (atomic ADD)     |
+| clicks      | Number  |     | Times a participant selected the chip |
+| sends       | Number  |     | Times a starter was inserted into the composer |
+| created_at  | Number  |     | Unix ms                              |
+| updated_at  | Number  |     | Unix ms                              |
+
+Admin-editable chat prompt bank (conversation starters). Participant `GET /api/prompts` returns active only and upserts any missing default prompts (deduped by mode + normalized text; never duplicates). Analytics via `POST /api/prompts/:id/events` with `{ type: "impression" | "click" | "send" }` using atomic `ADD` updates on `impressions` / `clicks` / `sends`.
+
+Participant orientation uses existing `users.has_seen_match` — when a match exists and the flag is false, the orientation overlay is shown before chat. **Begin Conversation** sets `has_seen_match: true`.

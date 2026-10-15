@@ -1,37 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getConversations } from '../services/matchService';
 import { respondToConsent } from '../services/consentService';
+import { on, off } from '../realtime';
 
-const POLL_MS = 5000;
+function filterIncoming(list, authId) {
+  const consentBy = (c) => c.consentBy ?? c.consentGivenBy;
+  return (Array.isArray(list) ? list : []).filter(
+    (c) =>
+      !c.mutualConsent &&
+      (!Array.isArray(consentBy(c)) || !consentBy(c).includes(authId))
+  );
+}
 
 export default function useIncomingRequests(authId) {
   const [incomingRequests, setIncomingRequests] = useState([]);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!authId) {
       setIncomingRequests([]);
       return;
     }
-
-    const poll = async () => {
-      try {
-        const list = await getConversations();
-        const consentBy = (c) => c.consentBy ?? c.consentGivenBy;
-        const pending = (Array.isArray(list) ? list : []).filter(
-          (c) =>
-            !c.mutualConsent &&
-            (!Array.isArray(consentBy(c)) || !consentBy(c).includes(authId))
-        );
-        setIncomingRequests(pending.map((c) => ({ ...c, docID: c.docID || c.cid || c.id })));
-      } catch (err) {
-        console.error('[useIncomingRequests] poll error:', err);
-      }
-    };
-
-    poll();
-    const interval = setInterval(poll, POLL_MS);
-    return () => clearInterval(interval);
+    try {
+      const list = await getConversations();
+      const pending = filterIncoming(list, authId);
+      setIncomingRequests(pending.map((c) => ({ ...c, docID: c.docID || c.cid || c.id })));
+    } catch (err) {
+      console.error('[useIncomingRequests] refresh error:', err);
+    }
   }, [authId]);
+
+  useEffect(() => {
+    if (!authId) {
+      setIncomingRequests([]);
+      return undefined;
+    }
+    refresh();
+    on('conversationUpdate', refresh);
+    return () => off('conversationUpdate', refresh);
+  }, [authId, refresh]);
 
   const acceptRequest = async (requestId) => {
     try {

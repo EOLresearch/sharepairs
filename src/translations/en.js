@@ -2,20 +2,21 @@ const en = {
   welcome: {
     hello_user: "Hello, {{name}}",
     thank_you: "Thank you for joining Share Pairs.",
-    intro_1: "This application is designed for you to create positive social interactions with others who have experienced a similar loss. We ask that you log in at least once a day to chat with your Share Pair.",
+    intro_1: "This application is designed for you to create positive social interactions with others who have experienced a similar loss. We ask that you log in at least once a day to chat with your Simpatico Match.",
     intro_2: "Our goal is to help you find someone who can relate to your loss. We hope that you will find comfort in sharing your story and listening to the stories of others. We are here to help you through your grief journey.",
     left_panel: "On the left side, you will find your active conversations and contacts list. Each side can be collapsed or expanded.",
     center_panel: "In the center, you will find the main chat window.",
-    right_panel: "On the right side, you will find information about your Share Pair and some prompts to help get the conversation started."
+    right_panel: "On the right side, you will find information about your Simpatico Match and some prompts to help get the conversation started."
   },
   support: {
     contact_message:
-      "If you have any issues with the application or chatting with your match, please reach out to Study Support via your Contacts pane."
+      "If you have any issues with the application or chatting with your Simpatico Match, please reach out to Study Support via your Contacts pane."
   },
   auth: {
     login_title: "Login",
-    email_placeholder: "Your Email Address",
-    password_placeholder: "Your Password",
+    email_placeholder: "Email",
+    password_placeholder: "Password",
+    study_login_hint: "Use the email you gave the study team. Your password is the access code they gave you, until you change it.",
     login_button: "Login",
     logging_in: "Logging in...",
     forgot_password: "Forgot Password?",
@@ -51,10 +52,13 @@ const en = {
     sections: {
       account_info: "Account Info",
       personal_info: "Personal Info",
-      your_story: "Your Story"
+      your_story: "Your Story",
+      intake: "Intake"
     },
     labels: {
       email: "Email",
+      email_screening_hint: "Use the same email address you used on the eligibility survey so the study team can find that record. Using the same email does not confirm eligibility or consent. You still verify this account and agree here.",
+      invite_code: "Invite code from the study team",
       password: "Password",
       confirm_password: "Confirm Password",
       display_name: "Display Name",
@@ -74,6 +78,13 @@ const en = {
       loss_experience: "Please describe your loss experience",
       consent_label: "By clicking this checkbox, I agree to share the above information and allow other users to view the information I shared."
     },
+    hints: {
+      cause: "Natural: e.g. cancer, illness\nUnnatural: e.g. car accident, homicide, suicide."
+    },
+    visibility: {
+      partner_badge: "Visible to your Simpatico Match",
+      partner_note: "Fields marked “Visible to your Simpatico Match” can be seen by your partner. Other information is only for the study team."
+    },
     buttons: {
       submit: "Submit",
       submitting: "Submitting...",
@@ -82,6 +93,7 @@ const en = {
     },
     errors: {
       missing_email: "Missing email address.",
+      missing_invite: "An invite code from the study team is required.",
       missing_password: "Password is required.",
       password_mismatch: "Passwords do not match.",
       weak_password: "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.",
@@ -99,7 +111,11 @@ const en = {
       missing_deceased_age: "Deceased age is required.",
       missing_loss_experience: "Loss experience is required.",
       missing_consent: "You must consent to share your information.",
+      missing_inq: "Please answer every INQ question.",
+      missing_cssrs: "Please answer the screening question.",
+      intake_unavailable: "The intake questions could not be loaded. Please refresh and try again.",
       email_in_use: "This email is already in use.",
+      invalid_invite: "Invite code is invalid or already used.",
       generic: "Registration failed. Please try again.",
       success: "Verification email sent. Please check your inbox and log in after verifying."
     },
@@ -116,7 +132,7 @@ const en = {
   info_panel: {
     lives_in: "Lives in",
     unknown: "Unknown",
-    story_title: "Your Share Pair's Story:",
+    story_title: "Your Simpatico Match's story:",
     no_story: "They haven’t shared a story yet.",
     non_match: "This person is one of your contacts. Start a conversation below."
   },
@@ -131,14 +147,15 @@ const en = {
   },
   chatroom: {
     new_request: '{name} has requested to start a conversation. Click to accept.',
-    new_match: '🎉 You have been matched! View the contacts panel to see your new match.',
+    new_match: '🎉 You have a Simpatico Match! View the contacts panel to see them.',
+    start_prompt: 'Do you want to start a conversation with {name}?',
     request_accepted: '{name} has accepted the conversation. Open it now?',
     already_active: 'This conversation is already active.',
     not_accepted: "This conversation hasn't been accepted by both users yet.",
   },
   distress: {
     title: "Distress Thermometer",
-    instructions: "Before you start or continue your conversation with your match, please click on the number that best describes your current level of distress.",
+    instructions: "Before you start or continue your conversation with your Simpatico Match, please click on the number that best describes your current level of distress.",
     levels: {
       100: "Unbearably upset, can’t function",
       90: "Extremely distressed",
@@ -156,22 +173,86 @@ const en = {
   },
   messageWindow: {
     unmatchedTitle: "Welcome, {name}.",
-    unmatchedLine1: "We're still working to match you with someone who shares a similar experience.",
-    unmatchedLine2: "Once you're matched, your Share Pair will appear in the Contacts panel and you can start a conversation.",
+    unmatchedLine1: "We're still working to find your Simpatico Match — someone who shares a similar experience.",
+    unmatchedLine2: "While you wait, browse the prompts on the right and message Study Support in Contacts. Your match will show up in Contacts when the study team pairs you.",
     noConversationTitle: "Select a conversation",
     noConversationLine: "Your messages will appear here.",
     loadMore: "Load More",
     noMessages: "No messages yet. Start the conversation!",
+    loadingMessages: "Loading messages…",
     inputPlaceholder: "Type a message",
-    send: "Send"
+    send: "Send",
+    pausedSend: "Messaging is paused for this conversation.",
+    terminatedSend: "This conversation has been ended."
+  },
+  waitingHub: {
+    tutorialTitle: "Study tutorial",
+    tutorialPlaceholder: "Tutorial video coming soon.",
+    purposeTitle: "About this study",
+    purpose:
+      "Share Pairs is a research study that pairs people who have experienced a similar loss so they can talk with someone who understands grief from the inside. There is no required agenda — you share as much or as little as feels right. The study team is learning whether this kind of peer support can help people through bereavement.",
+    contactsTitle: "Study contacts",
+    supportLabel: "Study Support",
+    yukaPlaceholderNote: "Contact details below are placeholders and will be updated.",
+    assessmentsNote: "If you have a study questionnaire due, open Assessments from the menu at the top."
+  },
+  profile: {
+    title: "Your profile",
+    subtitle: "Review and update the information you entered when you joined.",
+    save: "Save changes",
+    saving: "Saving…",
+    saved: "Profile updated.",
+    email_readonly: "Email cannot be changed here.\nContact Study Support if you need to update it.",
+    password_title: "Password",
+    password_hint: "You are still using the access code as your password. Choose a new one when you are ready.",
+    password_current: "Current password",
+    password_new: "New password",
+    password_confirm: "Confirm new password",
+    password_rules: "Use at least 8 characters, with an uppercase letter, a lowercase letter, a number, and a symbol.",
+    password_save: "Change password",
+    password_saving: "Changing…",
+    password_saved: "Password updated. Next time, sign in with the new password.",
+    password_mismatch: "The new passwords do not match.",
+    password_error: "Could not change your password. Please try again.",
+    error_generic: "Could not save your profile. Please try again."
+  },
+  report: {
+    action: "Report",
+    reported: "Reported",
+    prompt: "Why are you flagging this message?",
+    placeholder: "Short explanation for the study team…",
+    submit: "Submit report",
+    sending: "Sending…",
+    cancel: "Cancel",
+    needExplanation: "Please include a short explanation.",
+    submitted: "Thanks. The study team will review this. Your match is still active.",
+    error: "Could not send the report. Please try again."
+  },
+  assessments: {
+    title: "Assessments",
+    subtitle: "Complete the 8-week follow-up when it is scheduled.",
+    empty: "You do not have a questionnaire yet. The 8-week follow-up appears after you and your Simpatico Match start a conversation.",
+    dueBanner: "You have {count} assessment(s) due.",
+    dueModalBody: "Please complete your study questionnaires when you can. You can open them now or continue and come back from Assessments in the menu.",
+    open: "Open assessments",
+    dueLater: "Not now",
+    due: "Due",
+    overdue: "Overdue",
+    upcoming: "Upcoming",
+    notYetAvailable: "This 8-week follow-up is not available yet.",
+    complete: "Complete",
+    held: "Held",
+    pendingContent: "This questionnaire will be available once the study team loads the official items.",
+    scalePending: "This questionnaire is assigned, but the response scale is not confirmed yet. The study team will enable it once the source document is corrected.",
+    save: "Save",
+    saving: "Saving…",
+    saved: "Saved.",
+    submit: "Submit",
+    submitting: "Submitting…",
+    submitted: "Thank you. Your responses were saved.",
+    error: "Could not submit this assessment. Please try again.",
+    back: "Back to list"
   }
-
-
-
-
-
-
-
 };
 
 export default en;

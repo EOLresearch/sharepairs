@@ -11,6 +11,9 @@ ZIP="/tmp/sharepairs-api.zip"
 
 echo "==> Installing backend deps"
 cd "$BACKEND"
+export npm_config_cache="${npm_config_cache:-/tmp/npm-cache}"
+export TMPDIR="${TMPDIR:-/tmp}"
+mkdir -p "$npm_config_cache"
 npm install --omit=dev --no-fund --no-audit
 
 echo "==> Building $ZIP"
@@ -18,6 +21,7 @@ rm -f "$ZIP"
 # Keep package lean: only the API handler tree + shared + production deps
 zip -rq "$ZIP" \
   functions/api \
+  functions/websocket \
   shared \
   package.json \
   node_modules \
@@ -39,8 +43,19 @@ aws lambda update-function-code \
   --query '{Function:FunctionName,LastModified:LastModified,CodeSize:CodeSize}' \
   --output json
 
-echo "==> Waiting for update..."
+echo "==> Waiting for API Lambda update..."
 aws lambda wait function-updated --function-name "$API_LAMBDA_NAME" --region "$AWS_REGION"
+
+echo "==> Updating Lambda $WEBSOCKET_LAMBDA_NAME"
+aws lambda update-function-code \
+  --function-name "$WEBSOCKET_LAMBDA_NAME" \
+  --zip-file "fileb://$ZIP" \
+  --region "$AWS_REGION" \
+  --query '{Function:FunctionName,LastModified:LastModified,CodeSize:CodeSize}' \
+  --output json
+
+echo "==> Waiting for WebSocket Lambda update..."
+aws lambda wait function-updated --function-name "$WEBSOCKET_LAMBDA_NAME" --region "$AWS_REGION"
 
 echo "==> Smoke test"
 STATUS="$(curl -s -o /tmp/api-login.json -w '%{http_code}' \

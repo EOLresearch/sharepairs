@@ -1,12 +1,9 @@
-import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { getItem, updateItem } from '../../shared/database.js';
 import { TABLES } from '../../shared/database.js';
 import { auditEvents } from '../../shared/audit.js';
-
-const sesClient = new SESClient({});
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@sharepairs.com';
-const STUDY_EMAIL = process.env.STUDY_EMAIL || 'study@sharepairs.com';
-const SENDER_EMAIL = process.env.SES_SENDER_EMAIL || 'alerts@sharepairs.com';
+import { sendMail } from '../../shared/email.js';
+import { getStudyTeamEmail } from '../../shared/studyNotify.js';
+import { notificationSucceeded } from '../../shared/distressSafety.js';
 
 /**
  * Worker Lambda - Processes distress alerts from SQS and sends emails via SES
@@ -57,53 +54,40 @@ export const handler = async (event) => {
       const emailSubject = `🚨 Distress Alert - Share Pairs (Score: ${score})`;
       const emailBody = buildEmailBody(user, userProfile, distressEvent, message, context, userId);
 
-      // Send email via SES
-      const emailCommand = new SendEmailCommand({
-        Source: SENDER_EMAIL,
-        Destination: {
-          ToAddresses: [SUPPORT_EMAIL, STUDY_EMAIL]
-        },
-        Message: {
-          Subject: {
-            Data: emailSubject,
-            Charset: 'UTF-8'
-          },
-          Body: {
-            Html: {
-              Data: emailBody,
-              Charset: 'UTF-8'
-            },
-            Text: {
-              Data: emailBody.replace(/<[^>]*>/g, ''), // Strip HTML for text version
-              Charset: 'UTF-8'
-            }
-          }
-        },
-        ConfigurationSetName: process.env.SES_CONFIGURATION_SET || undefined
+      const emailResponse = await sendMail(
+        getStudyTeamEmail(),
+        emailSubject,
+        emailBody.replace(/<[^>]*>/g, ''),
+        emailBody
+      );
+      const messageId = emailResponse.mode || 'sent';
+
+      if (!notificationSucceeded(emailResponse)) {
+        await updateItem(TABLES.DISTRESS_EVENTS, { id: eventId }, {
+          status: 'notify_failed',
+          notified: false,
+          notify_error: emailResponse.error || `Distress notification failed (${emailResponse.mode})`,
+          notify_mode: emailResponse.mode || null,
+          updated_at: Date.now(),
+        });
+        await auditEvents.distressNotifyFailed(
+          userId,
+          eventId,
+          emailResponse.error || emailResponse.mode
+        );
+        results.push({ eventId, status: 'failed', error: emailResponse.error || emailResponse.mode });
+        continue;
+      }
+
+      await updateItem(TABLES.DISTRESS_EVENTS, { id: eventId }, {
+        status: 'sent',
+        notified: true,
+        emailed_at: Date.now(),
+        email_message_id: messageId,
+        notify_mode: emailResponse.mode || null,
+        updated_at: Date.now(),
       });
 
-      const emailResponse = await sesClient.send(emailCommand);
-      const messageId = emailResponse.MessageId;
-
-      // Update distress event status
-      await updateItem(
-        TABLES.DISTRESS_EVENTS,
-        { id: eventId },
-        {
-          UpdateExpression: 'SET #status = :status, emailed_at = :emailedAt, email_message_id = :messageId, updated_at = :updatedAt',
-          ExpressionAttributeNames: {
-            '#status': 'status'
-          },
-          ExpressionAttributeValues: {
-            ':status': 'sent',
-            ':emailedAt': Date.now(),
-            ':messageId': messageId,
-            ':updatedAt': Date.now()
-          }
-        }
-      );
-
-      // Audit log
       await auditEvents.distressEmailSent(userId, eventId, messageId);
 
       results.push({ eventId, status: 'success', messageId });

@@ -8,15 +8,15 @@ const getMatchUid = (v) => {
 };
 
 const getMatchLabel = (v, users) => {
-  if (!v) return 'Not matched';
+  if (!v) return 'No Simpatico Match';
   if (typeof v === 'object') {
     const name = v.displayName || v.email || v.uid || 'Unknown';
-    return `Matched (${name})`;
+    return `Simpatico Match (${name})`;
   }
   const uid = String(v);
   const u = users.find((x) => x.uid === uid);
   const name = u?.displayName || u?.email || uid;
-  return `Matched (${name})`;
+  return `Simpatico Match (${name})`;
 };
 
 function UserDetailsDrawer({
@@ -67,25 +67,17 @@ function UserDetailsDrawer({
         <div><strong>Kinship:</strong> {user.kinship || '—'}</div>
         <div><strong>Cause:</strong> {user.cause || '—'}</div>
         <div><strong>Chat:</strong> {user.chatDisabled ? 'Disabled' : 'Enabled'}</div>
-        <div><strong>Match:</strong> {matchBadge}</div>
+        <div><strong>Simpatico Match:</strong> {matchBadge}</div>
       </div>
 
       <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button onClick={() => onToggleChat?.(user)} style={{ padding: '6px 10px' }}>
           {user.chatDisabled ? 'Enable Chat' : 'Disable Chat'}
         </button>
-
-        <button
-          onClick={() => onUnpair?.(user)}
-          disabled={!getMatchUid(user.simpaticoMatch)}
-          style={{ padding: '6px 10px' }}
-        >
-          Remove Match
-        </button>
       </div>
 
       <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #eee' }}>
-        <div style={{ marginBottom: 8, fontWeight: 600 }}>Add Match</div>
+        <div style={{ marginBottom: 8, fontWeight: 600 }}>Add Simpatico Match</div>
         <input
           type="text"
           placeholder="Search partner by name, email, or UID"
@@ -114,13 +106,13 @@ function UserDetailsDrawer({
                       cursor: 'pointer',
                       background: isChosen ? '#f7f9ff' : 'transparent'
                     }}
-                    title={alreadyMatched ? 'This user is already matched' : ''}
+                    title={alreadyMatched ? 'This user already has a Simpatico Match' : ''}
                   >
                     <div style={{ fontSize: 13 }}>
                       <strong>{u.displayName || '—'}</strong> • {u.email || '—'}
                     </div>
                     <div style={{ fontSize: 12, color: '#666' }}>
-                      {u.uid} — {u.kinship || '—'} / {u.cause || '—'} {alreadyMatched ? ' • matched' : ''}
+                      {u.uid} — {u.kinship || '—'} / {u.cause || '—'} {alreadyMatched ? ' • Simpatico Match' : ''}
                     </div>
                   </li>
                 );
@@ -135,7 +127,7 @@ function UserDetailsDrawer({
             disabled={!partnerUid}
             style={{ padding: '6px 10px' }}
           >
-            Pair Users
+            Pair as Simpatico Match
           </button>
           <button onClick={clearPicker} style={{ padding: '6px 10px' }}>
             Clear

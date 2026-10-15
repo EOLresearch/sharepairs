@@ -2,7 +2,8 @@ import { success, error } from '../../../shared/response.js';
 import { authenticateUser } from '../../../shared/auth.js';
 import { getItem, putItem, updateItem, query } from '../../../shared/database.js';
 import { TABLES } from '../../../shared/database.js';
-import crypto from 'crypto';
+import { monitorFields, notifyConversationUpdate } from '../../../shared/conversations.js';
+import { broadcastToUsers } from '../../../shared/broadcast.js';
 
 function sortPair(a, b) {
   return a < b ? [a, b] : [b, a];
@@ -71,6 +72,7 @@ export async function consentRequest(event) {
     consent_by: [auth.userId],
     mutual_consent: false,
     is_closed: false,
+    moderation_status: 'active',
     has_unread_by: [],
     last_msg_at: null,
     last_msg_preview: null,
@@ -117,13 +119,44 @@ export async function consentRespond(event) {
   if (accept && !consentBy.includes(auth.userId)) {
     consentBy = [...consentBy, auth.userId];
   }
+  const wasMutual = Boolean(convo.mutual_consent);
   const mutualConsent = users.length === 2 && consentBy.length === 2;
+  const now = Date.now();
   await updateItem(TABLES.CONVERSATIONS, { id: requestId }, {
     consent_by: consentBy,
     mutual_consent: mutualConsent,
     seen_by: convo.seen_by || {},
-    updated_at: Date.now(),
+    updated_at: now,
   });
+
+  if (mutualConsent && !wasMutual) {
+    const updated = {
+      ...convo,
+      consent_by: consentBy,
+      mutual_consent: true,
+      updated_at: now,
+    };
+    try {
+      await notifyConversationUpdate(users, updated);
+      const otherId = users.map(String).find((id) => id !== String(auth.userId));
+      if (otherId) {
+        await broadcastToUsers([otherId], {
+          type: 'conversationAccepted',
+          payload: {
+            conversation: toConvoShape(updated),
+            acceptedBy: {
+              uid: auth.userId,
+              displayName: auth.displayName || 'your match',
+            },
+            timestamp: now,
+          },
+        });
+      }
+    } catch (err) {
+      console.warn('[consent.respond] accept notice failed:', err?.message || err);
+    }
+  }
+
   return success({ mutualConsent });
 }
 
@@ -139,10 +172,16 @@ function toConvoShape(row) {
     consentGivenBy: row.consent_by,
     mutualConsent: Boolean(row.mutual_consent),
     isClosed: Boolean(row.is_closed),
+    moderationStatus:
+      row.moderation_status === 'paused' || row.moderation_status === 'terminated'
+        ? row.moderation_status
+        : 'active',
+    ...monitorFields(row),
     hasUnreadBy: row.has_unread_by || [],
     lastMsgAt: row.last_msg_at,
     lastMsgPreview: row.last_msg_preview,
     lastSenderId: row.last_sender_id,
+    interventionStartAt: row.intervention_start_at || null,
     seenBy: row.seen_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

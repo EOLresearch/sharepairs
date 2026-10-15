@@ -5,7 +5,8 @@ const env = process.env;
 
 export const config = {
   stage: env.STAGE || 'dev',
-  isLocal: env.IS_LOCAL === 'true' || env.AWS_SAM_LOCAL === 'true',
+  simpaticoEnv: env.SIMPATICO_ENV || (env.MEMORY_DB === 'true' ? 'local' : 'study'),
+  isLocal: env.IS_LOCAL === 'true' || env.AWS_SAM_LOCAL === 'true' || env.MEMORY_DB === 'true',
 
   tables: {
     users: env.USERS_TABLE || 'sharepairs-dev-users',
@@ -19,8 +20,12 @@ export const config = {
   /** Allowed CORS origin (default * for dev). In prod set to your frontend origin. */
   corsOrigin: env.CORS_ORIGIN || '*',
 
-  /** Study support UID (used to allow support convo access without mutual consent). */
-  supportUid: env.SUPPORT_UID || 'ULvXTMmTbmTJ9q0Z3EKyr5fx0qr1',
+  /** Study support UID. Locally this is user1 so support chats show in that account. */
+  supportUid:
+    env.SUPPORT_UID ||
+    (env.MEMORY_DB === 'true' || env.SIMPATICO_ENV === 'local'
+      ? 'user-local-1'
+      : 'ULvXTMmTbmTJ9q0Z3EKyr5fx0qr1'),
 
   /** API Gateway WebSocket management endpoint (https://{api-id}.execute-api.{region}.amazonaws.com/{stage}) */
   websocketEndpoint: env.WEBSOCKET_API_ENDPOINT || null,

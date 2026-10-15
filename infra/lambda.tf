@@ -137,6 +137,10 @@ resource "aws_lambda_function" "distress_submit" {
       DISTRESS_QUEUE_URL            = aws_sqs_queue.distress_alerts.url
       DISTRESS_EVENTS_TABLE         = aws_dynamodb_table.distress_events.name
       AUDIT_LOGS_TABLE              = aws_dynamodb_table.audit_logs.name
+      USERS_TABLE                   = aws_dynamodb_table.users.name
+      SUPPORT_EMAIL                 = "eolstudysupport@med.cornell.edu"
+      STUDY_EMAIL                   = "eolstudysupport@med.cornell.edu"
+      SES_FROM_EMAIL                = "eolstudysupport@med.cornell.edu"
     }
   }
 
@@ -180,12 +184,14 @@ resource "aws_lambda_function" "distress_worker" {
 
   environment {
     variables = {
-      SUPPORT_EMAIL           = "support@sharepairs.com"  # Update with actual email
-      STUDY_EMAIL             = "study@sharepairs.com"    # Update with actual email
-      SES_SENDER_EMAIL        = "alerts@sharepairs.com"  # Must be verified in SES
+      SUPPORT_EMAIL           = "eolstudysupport@med.cornell.edu"
+      STUDY_EMAIL             = "eolstudysupport@med.cornell.edu"
+      SES_FROM_EMAIL          = "eolstudysupport@med.cornell.edu"
+      SES_SENDER_EMAIL        = "eolstudysupport@med.cornell.edu"
       SES_CONFIGURATION_SET   = aws_ses_configuration_set.distress_alerts.name
       DISTRESS_EVENTS_TABLE   = aws_dynamodb_table.distress_events.name
       AUDIT_LOGS_TABLE        = aws_dynamodb_table.audit_logs.name
+      USERS_TABLE             = aws_dynamodb_table.users.name
       DISTRESS_THRESHOLD      = "70"
     }
   }
@@ -243,11 +249,21 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       STUB_AUTH              = "true"
-      STUB_AUTH_SECRET       = "sharepairs-dev-launch"
+      STUB_AUTH_SECRET       = var.stub_auth_secret
+      SIMPATICO_ENV          = "study"
+      REQUIRE_INVITE         = "true"
+      ADMIN_EMAILS           = var.admin_emails
       USERS_TABLE            = aws_dynamodb_table.users.name
       CONVERSATIONS_TABLE    = aws_dynamodb_table.conversations.name
       MESSAGES_TABLE         = aws_dynamodb_table.messages.name
       CONNECTIONS_TABLE      = aws_dynamodb_table.connections.name
+      PROMPTS_TABLE          = aws_dynamodb_table.prompts.name
+      DISTRESS_EVENTS_TABLE  = aws_dynamodb_table.distress_events.name
+      ASSESSMENTS_TABLE      = aws_dynamodb_table.assessments.name
+      AUDIT_LOGS_TABLE       = aws_dynamodb_table.audit_logs.name
+      SUPPORT_EMAIL          = "eolstudysupport@med.cornell.edu"
+      STUDY_EMAIL            = "eolstudysupport@med.cornell.edu"
+      SES_FROM_EMAIL         = "eolstudysupport@med.cornell.edu"
       WEBSOCKET_API_ENDPOINT = "https://${aws_apigatewayv2_api.websocket.id}.execute-api.${data.aws_region.current.name}.amazonaws.com/${aws_apigatewayv2_stage.websocket.name}"
       CORS_ORIGIN            = "https://${aws_cloudfront_distribution.frontend.domain_name}"
     }

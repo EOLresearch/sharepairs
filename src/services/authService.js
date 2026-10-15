@@ -1,10 +1,12 @@
 /**
  * Auth service — all auth operations via REST.
- * Uses REACT_APP_API_URL when set (API Gateway); otherwise same-origin /api.
+ * Same-origin /api on study (CloudFront); localhost:3001 only when running locally.
  * Stores the stub/JWT token in sessionStorage and sends Authorization: Bearer.
  */
 
-const API_ROOT = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
+import { resolveApiRoot } from '../helpers/apiRoot';
+
+const API_ROOT = resolveApiRoot();
 const AUTH_BASE = `${API_ROOT}/api/auth`;
 const TOKEN_KEY = 'authToken';
 
@@ -13,6 +15,14 @@ export function getStoredToken() {
     return sessionStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
+  }
+}
+
+export function resetWelcomeSeen() {
+  try {
+    sessionStorage.removeItem('welcomeSeen');
+  } catch {
+    /* ignore */
   }
 }
 
@@ -49,6 +59,16 @@ async function handleResponse(res) {
  * Login with email and password.
  * Returns { user, token } or similar from backend.
  */
+export async function changePassword(currentPassword, newPassword) {
+  const res = await fetch(`${AUTH_BASE}/change-password`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ currentPassword, newPassword }),
+    credentials: 'include',
+  });
+  return handleResponse(res);
+}
+
 export async function login(email, password) {
   const res = await fetch(`${AUTH_BASE}/login`, {
     method: 'POST',
@@ -58,6 +78,7 @@ export async function login(email, password) {
   });
   const data = await handleResponse(res);
   if (data?.token) setStoredToken(data.token);
+  resetWelcomeSeen();
   return data;
 }
 
@@ -74,6 +95,7 @@ export async function logout() {
     if (!(res.ok || res.status === 404)) await handleResponse(res);
   } finally {
     setStoredToken(null);
+    resetWelcomeSeen();
   }
 }
 
@@ -101,6 +123,7 @@ export async function getCurrentUser() {
     method: 'GET',
     headers: authHeaders(),
     credentials: 'include',
+    cache: 'no-store',
   });
   if (res.status === 401) {
     setStoredToken(null);
@@ -120,7 +143,9 @@ export async function register(email, password, userDetails = {}, isAdmin = fals
     body: JSON.stringify({ email, password, ...userDetails, isAdmin }),
     credentials: 'include',
   });
-  return handleResponse(res);
+  const data = await handleResponse(res);
+  if (data?.token) setStoredToken(data.token);
+  return data;
 }
 
 /**
@@ -179,12 +204,11 @@ export async function updateUserProfile(uid, patch) {
  */
 export async function addContactIfNotExists(userUid, contactObj) {
   if (!userUid || !contactObj?.uid) return;
-  const res = await fetch(`${AUTH_BASE}/contacts`, {
+  const { apiFetch } = await import('./http');
+  const res = await apiFetch('/api/auth/contacts', {
     method: 'POST',
-    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ contact: contactObj }),
-    credentials: 'include',
   });
-  if (res.status === 404 || res.status === 501) return;
+  if (res.status === 404 || res.status === 501) return null;
   return handleResponse(res);
 }

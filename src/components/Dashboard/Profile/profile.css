@@ -1,0 +1,124 @@
+.profile-page {
+  flex: 0 1 auto;
+  align-self: center;
+  min-height: 0;
+  width: min(640px, calc(100% - 2.5rem));
+  max-height: calc(100% - 2rem);
+  margin: 1.25rem auto;
+  padding: 1.35rem 1.5rem 1.5rem;
+  border-radius: 1rem;
+  background-color: #55aca3;
+  border: 5px solid #0000004b;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.profile-page-header {
+  flex: 0 0 auto;
+  color: #fff;
+  margin-bottom: 0.85rem;
+}
+
+.profile-page-header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+}
+
+.profile-page-header p {
+  margin: 0 0 0.45rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.profile-visibility-note {
+  color: #f4fffd;
+  font-size: 0.95rem;
+}
+
+.profile-form {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.profile-page:not(.assessments-page) .fields-container.register {
+  flex: 0 0 auto;
+  padding: 1.15rem 1.25rem 1.25rem;
+  border-radius: 0.75rem;
+  overflow: visible;
+}
+
+.profile-page:not(.assessments-page) .reg-tabs {
+  margin-bottom: 1rem;
+}
+
+.profile-page:not(.assessments-page) .reg-tab {
+  min-height: 0;
+  padding: 0.55rem 0.4rem 0.65rem;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.profile-page:not(.assessments-page) .reg-tab-panel {
+  grid-template-columns: 1fr;
+  column-gap: 0;
+  row-gap: 0.15rem;
+}
+
+.profile-page:not(.assessments-page) .fields-container.register form label {
+  font-size: 1rem;
+  margin-top: 0.35rem;
+}
+
+.profile-page:not(.assessments-page) .fields-container.register form input,
+.profile-page:not(.assessments-page) .fields-container.register form select,
+.profile-page:not(.assessments-page) .fields-container.register form textarea {
+  font-size: 1.05rem;
+}
+
+.profile-page:not(.assessments-page) .register form .input-container {
+  min-height: 3rem;
+  margin: 0.25rem 0 0.85rem;
+}
+
+.profile-page:not(.assessments-page) .register .field-hint {
+  font-size: 0.92rem;
+  line-height: 1.4;
+  max-width: 36rem;
+}
+
+.profile-page:not(.assessments-page) .register .partner-visible-tag {
+  background: #f6f4ef;
+  color: #24564f;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.55rem;
+}
+
+.profile-password {
+  margin: 0.4rem 0 1rem;
+  padding-top: 0.85rem;
+  border-top: 2px solid rgba(246, 244, 239, 0.35);
+}
+
+.profile-password h3 {
+  margin: 0 0 0.35rem;
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.profile-password .field-hint {
+  color: #f4fffd;
+}
+
+.profile-password .sub-btn {
+  margin-top: 0.35rem;
+}
+
+.profile-page:not(.assessments-page) .btn-container {
+  align-items: flex-start;
+  margin-top: 0.35rem;
+  padding-top: 0.85rem;
+  border-top: 2px solid rgba(246, 244, 239, 0.35);
+}

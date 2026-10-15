@@ -7,16 +7,27 @@ export default function SystemMessage({
   onClick = null,
   actionLabel = 'OK', // default label
 }) {
+  const handleAction = async () => {
+    try {
+      if (onClick) {
+        await onClick();
+      }
+    } catch (err) {
+      console.error('SystemMessage action failed:', err);
+      return; // leave message up so error replacement (if any) can show
+    }
+    // Always dismiss after a successful OK (action may also clear)
+    cancelMessage?.();
+  };
+
   return (
     <div className={`system-message ${type}`}>
       <p>{message}</p>
       <div className="system-message-buttons">
-        {onClick && (
-          <button className="system-btn action-btn" onClick={onClick}>
-            {actionLabel}
-          </button>
-        )}
-        <button className="system-btn cancel-btn" onClick={cancelMessage}>
+        <button type="button" className="system-btn action-btn" onClick={handleAction}>
+          {actionLabel}
+        </button>
+        <button type="button" className="system-btn cancel-btn" onClick={cancelMessage}>
           Dismiss
         </button>
       </div>

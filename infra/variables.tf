@@ -21,3 +21,16 @@ variable "attach_cognito_authenticated_role" {
   type        = bool
   default     = false
 }
+
+variable "stub_auth_secret" {
+  description = "HMAC secret for stub auth tokens. Never commit a real value. Set TF_VAR_stub_auth_secret or overwrite via wire-api.sh."
+  type        = string
+  sensitive   = true
+  default     = "unset-set-via-wire-api"
+}
+
+variable "admin_emails" {
+  description = "Comma-separated emails granted admin on login. Empty means no auto-promotion."
+  type        = string
+  default     = ""
+}

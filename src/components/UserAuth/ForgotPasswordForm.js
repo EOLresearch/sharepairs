@@ -2,15 +2,14 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAuth } from './AuthContext';
 import en from '../../translations/en';
-import tr from '../../translations/tr';
 
-const ForgotPasswordForm = ({ setError, handleToggleView, language }) => {
+const ForgotPasswordForm = ({ setError, handleToggleView }) => {
   const { resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const t = language === 'tr' ? tr : en;
+  const t = en;
 
   const handleReset = async (e) => {
     e.preventDefault();
@@ -56,7 +55,6 @@ const ForgotPasswordForm = ({ setError, handleToggleView, language }) => {
 ForgotPasswordForm.propTypes = {
   setError: PropTypes.func.isRequired,
   handleToggleView: PropTypes.func.isRequired,
-  language: PropTypes.string.isRequired
 };
 
 export default ForgotPasswordForm;

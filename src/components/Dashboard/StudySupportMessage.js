@@ -1,10 +1,8 @@
 import React from "react";
-import { useEffect } from "react";
 import en from "../../translations/en";
-import tr from "../../translations/tr";
 
-const StudySupportMessage = ({ language }) => {
-  const t = language === "tr" ? tr : en;
+const StudySupportMessage = () => {
+  const t = en;
 
   return (
     <div className="study-support-message">

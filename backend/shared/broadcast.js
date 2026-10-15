@@ -48,10 +48,18 @@ export async function broadcastToUsers(userIds, message) {
 
   const data = JSON.stringify(message);
 
+  // Local in-process WS (dev.mjs) — same event shape as API Gateway Management API
   if (config.useLocalConnections) {
     for (const uid of unique) {
       sendLocal(uid, data);
     }
+    return;
+  }
+
+  if (!config.websocketEndpoint) {
+    console.error(
+      '[broadcast] WEBSOCKET_API_ENDPOINT is empty — realtime push skipped. Wire the WebSocket API on the Lambda.'
+    );
     return;
   }
 

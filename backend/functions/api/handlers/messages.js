@@ -4,6 +4,18 @@ import { getItem, putItem, query, updateItem } from '../../../shared/database.js
 import { TABLES } from '../../../shared/database.js';
 import { config } from '../../../shared/config.js';
 import crypto from 'crypto';
+import {
+  isMessagingBlocked,
+  isSupportConversation,
+  messagingBlockedMessage,
+} from '../../../shared/conversationModeration.js';
+import {
+  toMessageShape,
+  flagConversationForReview,
+  includeStaffMessageFields,
+  newId,
+} from '../../../shared/messageModeration.js';
+import { recordPeerInterventionStart } from '../../../shared/assessments/service.js';
 
 function toConvoId(u1, u2) {
   const [a, b] = [String(u1), String(u2)].sort();
@@ -28,13 +40,14 @@ export async function getMessages(event) {
   const convo = await getItem(TABLES.CONVERSATIONS, { id: conversationId });
   if (!convo) return error('Conversation not found', 404);
   const users = convo.users || [];
-  if (!users.includes(auth.userId)) return error('Not a participant', 403);
+  const isAdmin = Boolean(auth.isAdmin || auth.is_admin);
+  if (!isAdmin && !users.includes(auth.userId)) return error('Not a participant', 403);
   const isSupport =
     users.includes(config.supportUid) ||
     convo.recipient === config.supportUid ||
     convo.requester === config.supportUid ||
     convo.type === 'support';
-  if (!convo.mutual_consent && !isSupport && !auth.isAdmin) {
+  if (!convo.mutual_consent && !isSupport && !isAdmin) {
     return error('Conversation is not mutually accepted yet', 403);
   }
 
@@ -52,16 +65,12 @@ export async function getMessages(event) {
   }
 
   const items = await query(TABLES.MESSAGES, params);
-  const messages = items.map((m) => ({
-    id: m.message_id,
-    mid: m.message_id,
-    body: m.body,
-    sentFromUid: m.sent_from_uid,
-    sentFromDisplayName: m.sent_from_display_name || '',
-    status: m.status || 'sent',
-    clientId: m.client_id,
-    createdAt: m.created_at ? { seconds: Math.floor(m.created_at / 1000) } : null,
-  }));
+  const staffView = includeStaffMessageFields({
+    isAdmin,
+    viewerUid: auth.userId,
+    participantUids: users,
+  });
+  const messages = items.map((m) => toMessageShape(m, { isAdmin: staffView, viewerUid: auth.userId }));
   const hasMore = items.length === limit;
   const lastDoc = items.length ? items[items.length - 1]?.message_id : null;
   return success({
@@ -96,11 +105,7 @@ export async function sendMessage(event) {
   if (!convo) return error('Conversation not found', 404);
   const users = convo.users || [];
   if (!users.includes(auth.userId)) return error('Not a participant', 403);
-  const isSupport =
-    users.includes(config.supportUid) ||
-    convo.recipient === config.supportUid ||
-    convo.requester === config.supportUid ||
-    convo.type === 'support';
+  const isSupport = isSupportConversation(convo, config.supportUid);
   if (!convo.mutual_consent && !isSupport && !auth.isAdmin) {
     return error('Conversation is not mutually accepted yet', 403);
   }
@@ -109,6 +114,10 @@ export async function sendMessage(event) {
   const senderChatDisabled = auth.chat_disabled === true || auth.chatDisabled === true;
   if (senderChatDisabled && !isSupport && !auth.isAdmin) {
     return error('Chat is suspended. You cannot send messages until the study team re-enables access.', 403);
+  }
+
+  if (isMessagingBlocked(convo, { isSupport })) {
+    return error(messagingBlockedMessage(convo), 403);
   }
 
   const messageId = crypto.randomUUID();
@@ -124,6 +133,14 @@ export async function sendMessage(event) {
     created_at: now,
   });
 
+  if (!isSupport) {
+    try {
+      await recordPeerInterventionStart(convo, now);
+    } catch (err) {
+      console.warn('[messages.send] follow-up assignment failed:', err?.message || err);
+    }
+  }
+
   const others = users.filter((u) => u !== auth.userId);
   const hasUnreadBy = [...(convo.has_unread_by || []), ...others];
   await updateItem(
@@ -138,15 +155,32 @@ export async function sendMessage(event) {
     }
   );
 
-  return success({
-    messageId,
+  const messagePayload = {
+    id: messageId,
     mid: messageId,
     body: text,
     sentFromUid: auth.userId,
     sentFromDisplayName: body.senderDisplayName || auth.displayName || '',
     status: 'sent',
+    clientId: body.clientId || null,
     createdAt: { seconds: Math.floor(now / 1000) },
-  });
+  };
+
+  // Push to all participants (local WS registry or API Gateway connections)
+  try {
+    const { broadcastToUsers } = await import('../../../shared/broadcast.js');
+    await broadcastToUsers(users, {
+      type: 'message',
+      payload: {
+        conversationId,
+        message: messagePayload,
+      },
+    });
+  } catch (err) {
+    console.warn('Realtime broadcast failed:', err?.message || err);
+  }
+
+  return success(messagePayload);
 }
 
 /**
@@ -181,4 +215,82 @@ export async function markSeen(event) {
     updated_at: Date.now(),
   });
   return success({ ok: true });
+}
+
+/**
+ * POST /api/messages/report
+ * Body: { conversationId, messageId, explanation }
+ * Does not pause or terminate the match.
+ */
+export async function reportMessage(event) {
+  let auth;
+  try {
+    auth = await authenticateUser(event);
+  } catch (err) {
+    return error(err.message || 'Unauthorized', 401);
+  }
+  let body;
+  try {
+    body = JSON.parse(event.body || '{}');
+  } catch {
+    return error('Invalid JSON', 400);
+  }
+  const conversationId = body.conversationId;
+  const messageId = body.messageId || body.mid;
+  const explanation = String(body.explanation || '').trim();
+  if (!conversationId || !messageId) return error('conversationId and messageId required', 400);
+  if (explanation.length < 3) return error('Please include a short explanation.', 400);
+  if (explanation.length > 1000) return error('Explanation is too long.', 400);
+
+  const convo = await getItem(TABLES.CONVERSATIONS, { id: conversationId });
+  if (!convo) return error('Conversation not found', 404);
+  const users = convo.users || [];
+  if (!users.includes(auth.userId)) return error('Not a participant', 403);
+
+  const msg = await getItem(TABLES.MESSAGES, {
+    conversation_id: conversationId,
+    message_id: messageId,
+  });
+  if (!msg) return error('Message not found', 404);
+  if (msg.sent_from_uid === auth.userId) {
+    return error('You cannot report your own message.', 400);
+  }
+
+  const reports = Array.isArray(msg.reports) ? [...msg.reports] : [];
+  if (reports.some((r) => r.reporterUid === auth.userId || r.reporter_uid === auth.userId)) {
+    return error('You have already reported this message.', 409);
+  }
+
+  const report = {
+    id: newId(),
+    reporterUid: auth.userId,
+    reporterName: auth.displayName || auth.userData?.displayName || '',
+    explanation,
+    createdAt: Date.now(),
+  };
+  reports.push(report);
+  await updateItem(
+    TABLES.MESSAGES,
+    { conversation_id: conversationId, message_id: messageId },
+    { reports, updated_at: Date.now() }
+  );
+
+  await flagConversationForReview(convo, {
+    highPriority: true,
+    reason: 'participant_report',
+    reporterLabel: report.reporterName || auth.email || auth.userId,
+    explanation,
+    messagePreview: String(msg.body || '').slice(0, 280),
+    incrementReport: true,
+  });
+
+  return success({
+    ok: true,
+    reported: true,
+    terminated: false,
+    message: toMessageShape(
+      { ...msg, reports },
+      { isAdmin: false, viewerUid: auth.userId }
+    ),
+  });
 }

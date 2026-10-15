@@ -14,9 +14,8 @@ export default function OverlayManager({
   setShowDistressThermometer,
   handleDistressSelection,
   userData,
-  language, 
-  setLanguage,
-  distressLevel
+  distressLevel,
+  distressNotifyFailed,
 }) {
   const isAdmin = !!userData?.admin;
 
@@ -26,8 +25,8 @@ export default function OverlayManager({
         <DistressPopup
           setShowDistressPopup={setShowDistressPopup}
           handleDistressSelection={handleDistressSelection}
-          language={language}
           distressLevel={distressLevel}
+          notifyFailed={distressNotifyFailed}
         />
       )}
 
@@ -41,13 +40,13 @@ export default function OverlayManager({
         </div>
       )}
 
-      {!isAdmin && showDistressThermometer && (
+      {/* Never stack distress under the welcome overlay */}
+      {!isAdmin && showDistressThermometer && !showWelcomeMessage && (
         <div className="welcome-message-overlay">
           <DistressThermometer
             setShowDistressThermometer={setShowDistressThermometer}
             handleDistressSelection={handleDistressSelection}
-            language={language}
-          />
+            />
         </div>
       )}
 
@@ -56,9 +55,7 @@ export default function OverlayManager({
           <WelcomeMessage
             userData={userData}
             setShowWelcomeMessage={setShowWelcomeMessage}
-            language={language}
-            setLanguage={setLanguage}
-          />
+            />
         </div>
       )}
     </>

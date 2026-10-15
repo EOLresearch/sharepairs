@@ -1,16 +1,24 @@
 // components/UserAuth/VerifyEmail.js
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../UserAuth/AuthContext';
 import en from '../../translations/en';
-import tr from '../../translations/tr';
+import './verifyemail.css';
 
-export default function VerifyEmail({ language = 'en' }) {
+export default function VerifyEmail() {
   const { user, verifyEmail, resendVerificationEmail, logout } = useAuth();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const t = language === 'tr' ? tr : en;
+  const [devCode, setDevCode] = useState('');
+  const t = en;
   const v = t.verify;
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('pendingVerifyCode');
+      if (stored) setDevCode(stored);
+    } catch { /* ignore */ }
+  }, []);
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -18,6 +26,9 @@ export default function VerifyEmail({ language = 'en' }) {
     setBusy(true);
     try {
       await verifyEmail(code.trim());
+      try {
+        sessionStorage.removeItem('pendingVerifyCode');
+      } catch { /* ignore */ }
     } catch (err) {
       setError(err?.message || v.error_generic);
     } finally {
@@ -29,7 +40,11 @@ export default function VerifyEmail({ language = 'en' }) {
     setError('');
     setBusy(true);
     try {
-      await resendVerificationEmail();
+      const result = await resendVerificationEmail();
+      if (result?.devCode) {
+        setDevCode(result.devCode);
+        setCode(result.devCode);
+      }
     } catch (err) {
       setError(err?.message || v.error_resend);
     } finally {
@@ -44,6 +59,12 @@ export default function VerifyEmail({ language = 'en' }) {
         {v.sent_prefix} <strong>{user?.email}</strong>.
       </p>
       <p>{v.instructions}</p>
+      {devCode ? (
+        <div className="verify-email-devcode" role="status">
+          Email delivery is not reaching your inbox yet. Use this code:&nbsp;
+          <strong>{devCode}</strong>
+        </div>
+      ) : null}
       <form onSubmit={handleVerify} className="verify-email-form">
         <input
           type="text"

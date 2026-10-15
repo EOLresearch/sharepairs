@@ -5,7 +5,6 @@ import ContactsList from './ContactsList';
 import ConversationsList from './ConversationsList';
 import UnreadBadge from '../UnreadBadge/UnreadBadge';
 import en from '../../../translations/en';
-import tr from '../../../translations/tr';
 
 export default function LeftPanel({
   expanded,
@@ -24,10 +23,10 @@ export default function LeftPanel({
   conversations,
   onRequestSent,
   setSystemMessage,
-  language,
-  hasUnread
+  hasUnread,
+  showUnreadBadges = true,
 }) {
-  const t = language === 'tr' ? tr : en;
+  const t = en;
   const currentUserId = userData?.authId || userData?.uid;
   const isChatDisabled = userData?.chatDisabled === true;
   const togglePanel = () => setExpanded(!expanded);
@@ -61,9 +60,11 @@ export default function LeftPanel({
           currentUserId={currentUserId}
           handleConversationClick={handleConversationClick}
           setSystemMessage={setSystemMessage}
-          hasUnread={hasUnread}
+          showUnreadBadges={showUnreadBadges}
           setActiveConversation={setActiveConversation}
           activeConversation={activeConversation}
+          contacts={userData?.contacts || []}
+          simpaticoMatch={userData?.simpaticoMatch || null}
         />
       );
     }
@@ -104,7 +105,7 @@ export default function LeftPanel({
           {renderList()}
 
           <div className="support-message-container">
-            <StudySupportMessage language={language} />
+            <StudySupportMessage />
           </div>
         </div>
       )}

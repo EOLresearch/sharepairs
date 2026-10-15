@@ -1,7 +1,6 @@
 import React from 'react';
 import { createConversation } from '../../../services/matchService';
 import en from '../../../translations/en';
-import tr from '../../../translations/tr';
 
 export default function StartConversationButton({
   currentUser,
@@ -11,9 +10,8 @@ export default function StartConversationButton({
   setActiveConversation,
   setShowDistressThermometer,
   setSystemMessage,
-  language,
 }) {
-  const t = language === 'tr' ? tr : en;
+  const t = en;
   const myUid = currentUser?.authId || currentUser?.uid;
   const otherUid = contact?.uid;
 

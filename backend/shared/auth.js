@@ -3,6 +3,7 @@ import { TABLES } from './database.js';
 import { config } from './config.js';
 import jwt from 'jsonwebtoken';
 import { verifyStubToken, toUserData } from './stubAuth.js';
+import { isInviteRecord } from './invites.js';
 import { extractToken } from './extractToken.js';
 
 /**
@@ -13,24 +14,26 @@ export async function authenticateToken(token) {
     throw new Error('Missing or invalid token');
   }
 
-  // Stub auth (local dev)
-  if (config.stubAuth && token.startsWith('stub_')) {
+  if (config.stubAuth) {
+    if (!token.startsWith('stub_')) {
+      throw new Error('Invalid token');
+    }
     const sub = verifyStubToken(token);
     if (!sub) throw new Error('Invalid or expired token');
     const user = await getItem(TABLES.USERS, { id: sub });
-    if (!user) throw new Error('User not found');
+    if (!user || isInviteRecord(user)) throw new Error('User not found');
     const userData = toUserData(user);
     return {
       userId: sub,
       email: user.email,
-      displayName: user.display_name || userData.displayName,
+      displayName: user.display_name || userData?.displayName,
       isAdmin: Boolean(user.is_admin),
       userData,
       ...user,
     };
   }
 
-  // Cognito JWT (production)
+  // Cognito JWT — only when STUB_AUTH is off. Never decode unverified tokens in stub mode.
   try {
     const decoded = jwt.decode(token);
     if (!decoded || !decoded.sub) {

@@ -80,8 +80,8 @@ function UserDisplay({
       await Promise.all(ops);
       setHovered(false);
     } catch (err) {
-      console.error('Remove match failed:', err);
-      alert('Remove match failed.');
+      console.error('Remove Simpatico Match failed:', err);
+      alert('Remove Simpatico Match failed.');
     } finally {
       setBusy(false);
     }

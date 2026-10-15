@@ -12,6 +12,10 @@
 : "${PROJECT_PREFIX:=sharepairs-dev}"
 # Canonical participant CloudFront URL (account 562395967936)
 : "${STUDY_CLOUDFRONT_DOMAIN:=d63lgf5y8mx7j.cloudfront.net}"
+# Verified SES sender for verification codes (radiology account)
+: "${SES_FROM_EMAIL:=eolstudysupport@med.cornell.edu}"
+: "${SUPPORT_EMAIL:=eolstudysupport@med.cornell.edu}"
+# Do not default SUPPORT_PASSWORD — study deploy must set a non-default value.
 
 export AWS_REGION AWS_DEFAULT_REGION="$AWS_REGION"
 
@@ -98,6 +102,39 @@ _discover_lambda() {
     --output text 2>/dev/null | sed '/^None$/d'
 }
 
+# Management endpoint Lambda uses to PostToConnection (https://…/prod)
+_discover_websocket() {
+  aws apigatewayv2 get-apis \
+    --region "$AWS_REGION" \
+    --output json 2>/dev/null | python3 -c "
+import json, sys
+prefix = '${PROJECT_PREFIX}'
+region = '${AWS_REGION}'
+try:
+  items = json.load(sys.stdin).get('Items') or []
+  chosen = None
+  for a in items:
+    name = a.get('Name') or ''
+    proto = (a.get('ProtocolType') or '').upper()
+    if proto != 'WEBSOCKET':
+      continue
+    if name == f'{prefix}-websocket' or (prefix in name and 'websocket' in name.lower()):
+      chosen = a
+      break
+  if not chosen:
+    for a in items:
+      if (a.get('ProtocolType') or '').upper() == 'WEBSOCKET':
+        chosen = a
+        break
+  if chosen:
+    api_id = chosen['ApiId']
+    # Prefer stage name prod; fall back to first stage
+    print(f'https://{api_id}.execute-api.{region}.amazonaws.com/prod')
+except Exception:
+  pass
+" 2>/dev/null
+}
+
 _verify_account() {
   local current
   current="$(aws sts get-caller-identity --query Account --output text 2>/dev/null || true)"
@@ -125,6 +162,7 @@ _verify_account
 
 : "${API_LAMBDA_NAME:=$(_discover_lambda)}"
 : "${API_LAMBDA_NAME:=${PROJECT_PREFIX}-api}"
+: "${WEBSOCKET_LAMBDA_NAME:=${PROJECT_PREFIX}-websocket}"
 
 : "${API_GATEWAY_ID:=$(_tf api_gateway_id)}"
 if [ -z "$API_GATEWAY_ID" ]; then API_GATEWAY_ID="$(_discover_api)"; fi
@@ -153,13 +191,28 @@ fi
 : "${USER_UPLOADS_BUCKET:=${PROJECT_PREFIX}-${AWS_ACCOUNT_ID}-user-uploads}"
 
 : "${WEBSOCKET_API_ENDPOINT:=$(_tf websocket_api_endpoint)}"
+if [ -z "${WEBSOCKET_API_ENDPOINT:-}" ] || [ "$WEBSOCKET_API_ENDPOINT" = "None" ]; then
+  WEBSOCKET_API_ENDPOINT="$(_discover_websocket)"
+fi
+# Normalize: management URL must be https://{api-id}.execute-api.{region}.amazonaws.com/{stage}
+if [ -n "${WEBSOCKET_API_ENDPOINT:-}" ] && [[ "$WEBSOCKET_API_ENDPOINT" == wss://* ]]; then
+  WEBSOCKET_API_ENDPOINT="${WEBSOCKET_API_ENDPOINT/wss:\/\//https:\/\/}"
+fi
 
 : "${API_GATEWAY_STAGE:=prod}"
 
 export API_GATEWAY_ID API_GATEWAY_ENDPOINT
 export CLOUDFRONT_DISTRIBUTION_ID CLOUDFRONT_DOMAIN FRONTEND_BUCKET
-export API_LAMBDA_NAME API_GATEWAY_STAGE AWS_ACCOUNT_ID PROJECT_PREFIX
-export USER_UPLOADS_BUCKET WEBSOCKET_API_ENDPOINT STUDY_CLOUDFRONT_DOMAIN
+export API_LAMBDA_NAME WEBSOCKET_LAMBDA_NAME API_GATEWAY_STAGE AWS_ACCOUNT_ID PROJECT_PREFIX
+export USER_UPLOADS_BUCKET WEBSOCKET_API_ENDPOINT STUDY_CLOUDFRONT_DOMAIN SES_FROM_EMAIL SUPPORT_EMAIL SUPPORT_PASSWORD
+
+if [ -z "${WEBSOCKET_API_ENDPOINT:-}" ] || [ "$WEBSOCKET_API_ENDPOINT" = "None" ]; then
+  echo "WARNING: WEBSOCKET_API_ENDPOINT is empty." >&2
+  echo "  Chat push will not work until the WebSocket API is discovered." >&2
+  echo "  Check: aws apigatewayv2 get-apis --query \"Items[?ProtocolType=='WEBSOCKET']\"" >&2
+else
+  echo "WEBSOCKET_API_ENDPOINT=$WEBSOCKET_API_ENDPOINT"
+fi
 
 if [ -n "$CLOUDFRONT_DOMAIN" ] && [ "$CLOUDFRONT_DOMAIN" != "$STUDY_CLOUDFRONT_DOMAIN" ]; then
   echo "ERROR: CloudFront domain is $CLOUDFRONT_DOMAIN" >&2

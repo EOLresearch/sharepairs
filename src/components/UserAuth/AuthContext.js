@@ -1,11 +1,39 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import * as authService from '../../services/authService';
 import { setTokenGetter } from '../../api/client';
+import { on, off } from '../../realtime/client';
 import SystemMessage from '../SystemMessage/SystemMessage';
 
 const AuthContext = createContext();
 
 const AUTH_POLL_MS = 5000;
+
+function applyLiveMatch(current, payload) {
+  if (!current || current.isSupport) return current;
+  const id = current.authId || current.uid;
+  const partner = payload?.matches?.[id];
+  if (!partner?.uid) return current;
+  const contacts = Array.isArray(current.contacts) ? current.contacts : [];
+  return {
+    ...current,
+    simpaticoMatch: {
+      uid: partner.uid,
+      displayName: partner.displayName || '',
+      photoURL: partner.photoURL || '',
+    },
+    contacts: [
+      ...contacts.filter((c) => c?.type !== 'match' && c?.uid !== partner.uid),
+      {
+        uid: partner.uid,
+        displayName: partner.displayName || '',
+        photoURL: partner.photoURL || '',
+        type: 'match',
+      },
+    ],
+    matchNoticeSeen: false,
+    hasSeenMatch: false,
+  };
+}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -13,14 +41,18 @@ export const AuthProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true);
   const [systemMessage, setSystemMessage] = useState(null);
   const pollRef = useRef(null);
+  const refreshGen = useRef(0);
+  const refreshAuthRef = useRef(async () => null);
 
   useEffect(() => {
     setTokenGetter(() => authService.getStoredToken());
   }, []);
 
   const refreshAuth = async () => {
+    const gen = ++refreshGen.current;
     try {
       const data = await authService.getCurrentUser();
+      if (gen !== refreshGen.current) return null;
       if (data?.user) {
         const ud = data.userData ?? { authId: data.user.uid, ...data.user };
         setUser(data.user);
@@ -34,28 +66,56 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
     } catch {
+      if (gen !== refreshGen.current) return null;
       setUser(null);
       setUserData(null);
       setAuthLoading(false);
       return null;
     }
   };
+  refreshAuthRef.current = refreshAuth;
 
   useEffect(() => {
     refreshAuth();
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    pollRef.current = setInterval(refreshAuth, AUTH_POLL_MS);
+    const handler = (payload) => {
+      refreshGen.current += 1;
+      setUserData((current) => applyLiveMatch(current, payload));
+    };
+    on('matchCreated', handler);
+    return () => off('matchCreated', handler);
+  }, []);
+
+  useEffect(() => {
+    if (!user?.uid) return undefined;
+    pollRef.current = setInterval(() => {
+      refreshAuthRef.current();
+    }, AUTH_POLL_MS);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [user]);
+  }, [user?.uid]);
 
   const login = async (email, password) => {
-    await authService.login(email, password);
+    const result = await authService.login(email, password);
+    // Prefer the login payload so a flaky /me cannot leave the UI stuck on Login
+    if (result?.user) {
+      const ud = result.userData ?? { authId: result.user.uid, ...result.user };
+      setUser(result.user);
+      setUserData(ud);
+      setAuthLoading(false);
+      // Refresh in background to stay in sync with the server
+      refreshAuth().catch(() => {});
+      return { user: result.user, userData: ud };
+    }
     const data = await refreshAuth();
+    if (!data?.user) {
+      const err = new Error('Login succeeded but session could not be established');
+      err.code = 'auth/session';
+      throw err;
+    }
     return data;
   };
 
@@ -74,14 +134,36 @@ export const AuthProvider = ({ children }) => {
     try {
       const result = await authService.register(email, password, userDetails, false);
       const needsConfirmation = result?.needsConfirmation === true;
+
+      if (result?.token) {
+        authService.setStoredToken(result.token);
+      }
+      authService.resetWelcomeSeen();
+
+      if (needsConfirmation) {
+        await refreshAuth();
+        if (result.devCode) {
+          try {
+            sessionStorage.setItem('pendingVerifyCode', result.devCode);
+          } catch { /* ignore */ }
+        }
+        const mailNote = result.devCode
+          ? `Email delivery is not working yet — your code is ${result.devCode}`
+          : 'Verification email sent. Enter the 6-digit code to continue.';
+        setSystemMessage({
+          message: mailNote,
+          type: result.devCode ? 'info' : 'success',
+        });
+        return { success: true, needsConfirmation: true, devCode: result.devCode || null };
+      }
+
+      // Auto-verified (study mode) — stay signed in and enter the app
+      await refreshAuth();
       setSystemMessage({
-        message: needsConfirmation
-          ? 'Verification email sent. Please check your inbox.'
-          : 'Account created. You can log in now.',
+        message: 'Account created. Welcome!',
         type: 'success',
       });
-      await logout();
-      return { success: true, needsConfirmation };
+      return { success: true, needsConfirmation: false };
     } catch (err) {
       setSystemMessage({
         message: 'Registration error: ' + (err?.message || String(err)),
@@ -93,8 +175,19 @@ export const AuthProvider = ({ children }) => {
 
   const resendVerificationEmail = async () => {
     try {
-      await authService.resendVerificationEmail();
+      const result = await authService.resendVerificationEmail();
+      if (result?.devCode) {
+        try {
+          sessionStorage.setItem('pendingVerifyCode', result.devCode);
+        } catch { /* ignore */ }
+        setSystemMessage({
+          message: `Email not delivered — your code is ${result.devCode}`,
+          type: 'info',
+        });
+        return result;
+      }
       setSystemMessage({ message: 'Verification email sent.', type: 'success' });
+      return result;
     } catch (err) {
       setSystemMessage({
         message: 'Resend failed: ' + (err?.message || String(err)),
@@ -128,6 +221,7 @@ export const AuthProvider = ({ children }) => {
         resendVerificationEmail,
         verifyEmail,
         resetAuthContext,
+        refreshAuth,
       }}
     >
       {children}

@@ -1,21 +1,12 @@
-import { useState, useEffect } from 'react';
-import { updateUserProfile } from '../services/authService';
+/**
+ * Legacy match-alert hook — unused by Chatroom.
+ * Orientation overlay (ParticipantOrientation) is the first-time match UX.
+ * Kept for compatibility if other callers import it.
+ */
+import { useEffect } from 'react';
 
-export default function useMatchAlert(authId, userData, showWelcome) {
-  const [hasShown, setHasShown] = useState(false);
-
+export default function useMatchAlert(_authId, _userData, _showWelcome) {
   useEffect(() => {
-    if (showWelcome || !userData) return;
-    const matched = Boolean(userData.simpaticoMatch);
-    if (matched && !hasShown && !userData.hasSeenMatch) {
-      alert(
-        '🎉 You have been matched! View the contacts panel to see your new match.'
-      );
-      setHasShown(true);
-      updateUserProfile(authId, { hasSeenMatch: true }).catch(console.error);
-    }
-    if (!matched && hasShown) {
-      setHasShown(false);
-    }
-  }, [authId, userData, showWelcome, hasShown]);
+    // no-op: orientation overlay handles first-time match guidance
+  }, []);
 }

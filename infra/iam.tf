@@ -6,9 +6,9 @@
 # ----------------------------------------
 # 
 # IAM Users vs IAM Roles:
-# - IAM User (like "sharepairs-admin"): A person or service account that you use
-#   to log into AWS Console or run AWS CLI commands. Has permanent credentials.
-# 
+# - IAM User: A person or service account used for Console / CLI access.
+#   Has long-lived access keys. Prefer roles + short-lived creds when possible.
+#
 # - IAM Role: A set of permissions that AWS SERVICES (not you) can temporarily
 #   "put on" to access other AWS services. Think of it like a keycard badge.
 # 

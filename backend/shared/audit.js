@@ -75,6 +75,12 @@ export const auditEvents = {
     logEvent('distress_email_sent', userId, {
       event_id: eventId,
       email_message_id: messageId
+    }),
+
+  distressNotifyFailed: (userId, eventId, errorMessage) =>
+    logEvent('distress_notify_failed', userId, {
+      event_id: eventId,
+      error: errorMessage
     })
 };
 

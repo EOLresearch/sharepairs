@@ -1,9 +1,8 @@
 import React from 'react';
 import StartConversationButton from './StartConversationButton';
 import en from '../../../translations/en';
-import tr from '../../../translations/tr';
 
-const simpaticoLogo = `${process.env.PUBLIC_URL}/eardpairtransparentbg.svg`;
+const sharePairsLogo = `${process.env.PUBLIC_URL}/eardpairtransparentbg.png`;
 
 const InfoPanel = ({
   contact,
@@ -15,18 +14,17 @@ const InfoPanel = ({
   onRequestSent, 
   setSystemMessage,
   conversations,
-  language
 }) => {
   if (!contact) return null;
 
-  const t = language === 'tr' ? tr : en;
+  const t = en;
   const isMatch = contact.type === 'match';
 
   return (
     <div className="infocard-container">
       <div className="header">
         <div className="img-container">
-          <img className="profile-image" alt="User" src={contact.photoURL || simpaticoLogo} />
+          <img className="profile-image" alt="User" src={contact.photoURL || sharePairsLogo} />
         </div>
         <div className="header-text">
           <h3>{contact.displayName}</h3>
@@ -55,7 +53,6 @@ const InfoPanel = ({
           setSystemMessage={setSystemMessage}
           activeConversation={activeConversation}
           conversations={conversations}
-          language={language}
         />
       </div>
     </div>

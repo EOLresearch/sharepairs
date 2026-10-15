@@ -1,33 +1,24 @@
 import './welcomemessage.css';
-import { useState } from 'react';
 import StudySupportMessage from './StudySupportMessage';
-import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import { translate } from '../../helpers/translate';
 import en from '../../translations/en';
-import tr from '../../translations/tr';
 
-const simpaticoLogo = `${process.env.PUBLIC_URL}/sharepairslogo.svg`;
+const sharePairsLogo = `${process.env.PUBLIC_URL}/sharepairslogo.png`;
 
-function WelcomeMessage({ userData, setShowWelcomeMessage, language, setLanguage }) {
-  const t = language === 'tr' ? tr : en;
+function WelcomeMessage({ userData, setShowWelcomeMessage }) {
+  const t = en;
 
   return (
     <div className="welcome-message">
       <div className='header'>
         <div className='image-container'>
-          <img className='profile-image' alt={`Profile of user`} src={simpaticoLogo} />
+          <img className='profile-image' alt="Share Pairs logo" src={sharePairsLogo} />
         </div>
         <div className='header-text'>
           <p><strong>{translate(t.welcome.hello_user, { name: userData.displayName })}</strong></p>
           <p>{t.welcome.thank_you}</p>
-{/* 
-          <div className='language-toggle-container'>
-            <LanguageToggle language={language} setLanguage={setLanguage} />
-          </div> */}
-          
         </div>
         <button className='welcome-close' onClick={e => setShowWelcomeMessage(false)}>X</button>
-
       </div>
 
       <div className='body'>
@@ -39,12 +30,8 @@ function WelcomeMessage({ userData, setShowWelcomeMessage, language, setLanguage
           <p><b>{t.welcome.right_panel}</b></p>
         </div>
         <div className='match-details'>
-          {/* {match
-            ? <h4>You have been matched with {match.displayName}.</h4>
-            : <p>You currently don't have a match. Hang tight!</p>
-          } */}
         </div>
-        <StudySupportMessage language={language} />
+        <StudySupportMessage />
       </div>
     </div>
   );

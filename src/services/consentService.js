@@ -1,7 +1,8 @@
 /**
  * Consent service — accept/respond to conversation requests via REST.
- * Endpoint: /api/consent/respond
  */
+
+import { apiFetch } from './http';
 
 async function handleResponse(res) {
   const data = await res.json().catch(() => ({}));
@@ -16,14 +17,11 @@ async function handleResponse(res) {
 /**
  * Respond to a conversation request (accept or decline).
  * requestId is the conversation doc ID.
- * Returns { mutualConsent } or similar.
  */
 export async function respondToConsent(requestId, accept = true) {
-  const res = await fetch('/api/consent/respond', {
+  const res = await apiFetch('/api/consent/respond', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ requestId, accept }),
-    credentials: 'include',
   });
   return handleResponse(res);
 }

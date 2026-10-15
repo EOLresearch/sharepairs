@@ -3,6 +3,8 @@
  * Used by ConnectionContext and by services that should skip requests while reconnecting.
  */
 
+import { resolveApiRoot } from '../helpers/apiRoot';
+
 const PING_PATH = '/api/auth/me';
 const PING_INTERVAL_MS = 15_000;
 const BACKOFF_INITIAL_MS = 1_000;
@@ -10,13 +12,7 @@ const BACKOFF_MAX_MS = 30_000;
 const BACKOFF_MULTIPLIER = 2;
 
 function getBaseUrl() {
-  if (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL) {
-    return process.env.REACT_APP_API_URL;
-  }
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return '';
-  }
-  return 'http://localhost:3001';
+  return resolveApiRoot();
 }
 
 /**
@@ -26,10 +22,17 @@ function getBaseUrl() {
 export async function ping() {
   const url = getBaseUrl() ? `${getBaseUrl()}${PING_PATH}` : PING_PATH;
   try {
+    const headers = { Accept: 'application/json' };
+    try {
+      const token = sessionStorage.getItem('authToken');
+      if (token) headers.Authorization = `Bearer ${token}`;
+    } catch {
+      /* ignore */
+    }
     const res = await fetch(url, {
       method: 'GET',
       credentials: 'include',
-      headers: { Accept: 'application/json' },
+      headers,
     });
     if (res.status >= 200 && res.status < 300) return true;
     if (res.status === 401) return true; // server reachable, auth issue only

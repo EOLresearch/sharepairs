@@ -87,7 +87,7 @@ export default function UserCard({
         <h3>{user.displayName}</h3>
         <div className={user.simpaticoMatch ? 'matched' : 'not-matched'}>
           <span className="card-label">
-            {user.simpaticoMatch ? 'Matched' : 'Not Matched'}
+            {user.simpaticoMatch ? 'Simpatico Match' : 'No Simpatico Match'}
           </span>
         </div>
       </div>
@@ -106,12 +106,12 @@ export default function UserCard({
           <span>&nbsp;{user.uid}</span>
         </div>
         <div className="card-row">
-          <span className="card-label">Match: </span>
+          <span className="card-label">Simpatico Match: </span>
           <span>
             &nbsp;
             {user.simpaticoMatch
               ? user.simpaticoMatch.displayName
-              : 'user not matched'}
+              : 'no Simpatico Match'}
           </span>
         </div>
         <div className="card-row">
@@ -138,7 +138,7 @@ export default function UserCard({
               onClick={(e) => removeMatch(user)}
               className="card-btn"
             >
-              Remove match
+              Remove Simpatico Match
             </button>
           ) : (
             <button
@@ -263,7 +263,7 @@ export default function UserCard({
         <h3>{user.displayName}</h3>
         <div className={user.simpaticoMatch ? 'matched' : 'not-matched'}>
           <span className="card-label">
-            {user.simpaticoMatch ? 'Matched' : 'Not Matched'}
+            {user.simpaticoMatch ? 'Simpatico Match' : 'No Simpatico Match'}
           </span>
         </div>
       </div>
@@ -282,12 +282,12 @@ export default function UserCard({
           <span>&nbsp;{user.uid}</span>
         </div>
         <div className="card-row">
-          <span className="card-label">Match: </span>
+          <span className="card-label">Simpatico Match: </span>
           <span>
             &nbsp;
             {user.simpaticoMatch
               ? user.simpaticoMatch.displayName
-              : 'user not matched'}
+              : 'no Simpatico Match'}
           </span>
         </div>
 
@@ -297,7 +297,7 @@ export default function UserCard({
               onClick={(e) => removeMatch(e, user)}
               className="card-btn"
             >
-              Remove match
+              Remove Simpatico Match
             </button>
           ) : (
             <button

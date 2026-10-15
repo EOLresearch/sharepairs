@@ -7,56 +7,92 @@ import {
   fetchOlderMessages,
   markConversationSeen,
 } from '../../../services/messageService';
-import { SUPPORT_UID } from '../../../constants';
+import { getSupportUid } from '../../../constants';
 
 import en from '../../../translations/en';
-import tr from '../../../translations/tr';
+import WaitingHub from './WaitingHub';
+import {
+  isConversationMessagingBlocked,
+  moderationBannerText,
+  moderationStatusOf,
+} from '../../../helpers/conversationModeration';
+import { hasBannedWord } from '../../../helpers/badWords';
+import BlurredText from '../ChatMessage/BlurredText';
 
 export default function MessageWindow({
   userData,
   handleTriggerWarning,
   activeConversation,
   reconnectGeneration = 0,
-  language = 'en',
   initialMessages,
   hasUnread,
   setHasUnread,
   setSystemMessage,
+  draftMessage,
+  onDraftChange,
+  composerInputRef,
 }) {
-  const t = language === 'tr' ? tr.messageWindow : en.messageWindow;
+  const t = en.messageWindow;
 
   const isAdmin = Boolean(userData?.admin);
-  const [message, setMessage] = useState('');
+  const [localMessage, setLocalMessage] = useState('');
+  const controlled = typeof onDraftChange === 'function';
+  const message = controlled ? (draftMessage ?? '') : localMessage;
+  const setMessage = controlled ? onDraftChange : setLocalMessage;
   const [messages, setMessages] = useState([]);
+  const [loadedConvoId, setLoadedConvoId] = useState(null);
   const [lastDoc, setLastDoc] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const contentRef = useRef(null);
 
+  const convoId = activeConversation?.docID || null;
+  // Derive loading from convo identity so the spinner shows on the first paint
+  // after switching threads (useEffect-only flags flash the empty state first).
+  const messagesLoading = Boolean(convoId) && loadedConvoId !== convoId;
+
   useEffect(() => {
-    if (!activeConversation?.docID || !messages?.length) return;
+    if (!convoId || !messages?.length || messagesLoading) return;
     const last = messages[messages.length - 1];
     if (last?.sentFromUid && last.sentFromUid !== userData?.authId) {
-      markConversationSeen(activeConversation.docID, userData.authId).catch((e) =>
+      markConversationSeen(convoId, userData.authId).catch((e) =>
         console.warn('markConversationSeen failed:', e)
       );
     }
-  }, [messages, activeConversation?.docID, userData?.authId]);
+  }, [messages, convoId, userData?.authId, messagesLoading]);
 
   useEffect(() => {
-    if (initialMessages?.length) {
+    if (initialMessages?.length && convoId) {
       setMessages(initialMessages);
       setLastDoc(null);
       setHasMore(initialMessages.length >= 10);
       setHasUnread(false);
+      setLoadedConvoId(convoId);
     }
-  }, [initialMessages, setHasUnread]);
+  }, [initialMessages, setHasUnread, convoId]);
 
   useEffect(() => {
-    if (!activeConversation?.docID) return;
+    if (!convoId) {
+      setMessages([]);
+      setLoadedConvoId(null);
+      setLastDoc(null);
+      setHasMore(false);
+      return undefined;
+    }
 
-    const unsub = listenToMessages(activeConversation.docID, (liveMsgs) => {
+    // Drop the previous thread immediately.
+    setMessages([]);
+    setLastDoc(null);
+    setHasMore(false);
+
+    let cancelled = false;
+    const unsub = listenToMessages(convoId, (liveMsgs) => {
+      if (cancelled) return;
       setMessages((prev) => {
-        if (prev.length && liveMsgs.length && prev[prev.length - 1]?.mid === liveMsgs[liveMsgs.length - 1]?.mid) {
+        if (
+          prev.length &&
+          liveMsgs.length &&
+          prev[prev.length - 1]?.mid === liveMsgs[liveMsgs.length - 1]?.mid
+        ) {
           return liveMsgs;
         }
         const serverClientIds = new Set(liveMsgs.map((m) => m.clientId).filter(Boolean));
@@ -66,24 +102,32 @@ export default function MessageWindow({
         return [...liveMsgs, ...stillSending];
       });
       setHasUnread(false);
+      setLoadedConvoId(convoId);
     });
 
-    return () => unsub?.();
-  }, [activeConversation?.docID, setHasUnread]);
+    return () => {
+      cancelled = true;
+      unsub?.();
+    };
+  }, [convoId, setHasUnread]);
 
   // Sync messages when we reconnect after backoff
   useEffect(() => {
-    if (!activeConversation?.docID || reconnectGeneration < 1) return;
-    getMessages(activeConversation.docID)
-      .then((msgs) => setMessages(Array.isArray(msgs) ? msgs : []))
+    if (!convoId || reconnectGeneration < 1) return;
+    getMessages(convoId)
+      .then((msgs) => {
+        setMessages(Array.isArray(msgs) ? msgs : []);
+        setLoadedConvoId(convoId);
+      })
       .catch(() => {});
-  }, [activeConversation?.docID, reconnectGeneration]);
+  }, [convoId, reconnectGeneration]);
 
   useEffect(() => {
+    if (messagesLoading) return;
     if (contentRef.current) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, messagesLoading]);
 
   const handleLoadMore = async () => {
     if (!activeConversation?.docID) return;
@@ -111,6 +155,18 @@ export default function MessageWindow({
       return;
     }
 
+    const peerBlocked =
+      isConversationMessagingBlocked(activeConversation) &&
+      !isSupportConversation(activeConversation);
+    if (peerBlocked) {
+      const status = moderationStatusOf(activeConversation);
+      setSystemMessage?.({
+        type: 'alert',
+        message: status === 'paused' ? t.pausedSend : t.terminatedSend,
+      });
+      return;
+    }
+
     const body = message.trim();
     const clientId =
       typeof crypto !== 'undefined' && crypto.randomUUID
@@ -131,11 +187,29 @@ export default function MessageWindow({
     setMessage('');
 
     try {
-      await sendChatMessage(activeConversation.docID, {
+      const result = await sendChatMessage(activeConversation.docID, {
         body,
         senderDisplayName: userData.displayName || '',
         clientId,
       });
+      // Confirm locally even if WebSocket push is down (common on miswired study deploys)
+      const saved = result?.message || result;
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.clientId !== clientId) return m;
+          return {
+            ...m,
+            ...(saved && typeof saved === 'object' ? saved : {}),
+            clientId,
+            mid: saved?.mid || saved?.id || m.mid,
+            status: 'sent',
+            body: saved?.body || body,
+            sentFromUid: saved?.sentFromUid || m.sentFromUid,
+            sentFromDisplayName: saved?.sentFromDisplayName || m.sentFromDisplayName,
+            createdAt: saved?.createdAt || m.createdAt,
+          };
+        })
+      );
     } catch (err) {
       console.error('sendMessage failed:', err);
       setMessages((prev) => prev.filter((m) => m.clientId !== clientId));
@@ -144,6 +218,8 @@ export default function MessageWindow({
         setSystemMessage?.({ type: 'alert', message: 'Please sign in to send messages.' });
       } else if (msg.includes('PERMISSION_DENIED')) {
         setSystemMessage?.({ type: 'alert', message: "You're not a participant in this conversation." });
+      } else if (msg.includes('paused') || msg.includes('ended')) {
+        setSystemMessage?.({ type: 'alert', message: msg });
       } else if (msg.includes('NOT_FOUND') || msg.includes('conversation')) {
         setSystemMessage?.({ type: 'alert', message: 'Conversation not found.' });
       } else {
@@ -156,9 +232,9 @@ export default function MessageWindow({
     if (!convo) return false;
     const users = Array.isArray(convo.users) ? convo.users : [];
     return (
-      users.includes(SUPPORT_UID) ||
-      convo.recipient === SUPPORT_UID ||
-      convo.requester === SUPPORT_UID ||
+      users.includes(getSupportUid()) ||
+      convo.recipient === getSupportUid() ||
+      convo.requester === getSupportUid() ||
       convo.type === 'support'
     );
   }, []);
@@ -187,9 +263,7 @@ export default function MessageWindow({
     return (
       <div className="message-window unmatched-placeholder">
         <div className="message-content">
-          <h2>{t.unmatchedTitle.replace('{name}', userData.displayName || 'there')}</h2>
-          <p>{t.unmatchedLine1}</p>
-          <p>{t.unmatchedLine2}</p>
+          <WaitingHub displayName={userData.displayName} />
         </div>
       </div>
     );
@@ -206,37 +280,104 @@ export default function MessageWindow({
     );
   }
 
+  const peerMessagingBlocked =
+    isConversationMessagingBlocked(activeConversation) &&
+    !isSupportConversation(activeConversation);
+  const moderationBanner = peerMessagingBlocked
+    ? moderationBannerText(activeConversation)
+    : '';
+  const composerDisabled = messagesLoading || peerMessagingBlocked;
+  const maskingComposer = hasBannedWord(message);
+
   return (
     <div className="message-window">
+      {moderationBanner ? (
+        <div
+          className={`convo-moderation-banner ${moderationStatusOf(activeConversation)}`}
+          role="status"
+        >
+          {moderationBanner}
+        </div>
+      ) : null}
       <div className="message-content" ref={contentRef}>
-        {hasMore && (
-          <div className="load-more-wrapper">
-            <button onClick={handleLoadMore} className="load-more-btn">
-              {t.loadMore}
-            </button>
+        {messagesLoading ? (
+          <div className="messages-loading" role="status" aria-live="polite">
+            <div className="messages-loading-spinner" aria-hidden="true" />
+            <p>{t.loadingMessages}</p>
           </div>
-        )}
-
-        {messages.length > 0 ? (
-          messages.map((msg) => (
-            <ChatMessage key={msg.mid} message={msg} currentUserId={userData.authId} />
-          ))
         ) : (
-          <div className="no-messages-placeholder">{t.noMessages}</div>
+          <>
+            {hasMore && (
+              <div className="load-more-wrapper">
+                <button onClick={handleLoadMore} className="load-more-btn">
+                  {t.loadMore}
+                </button>
+              </div>
+            )}
+
+            {messages.length > 0 ? (
+              messages.map((msg) => (
+                <ChatMessage
+                  key={msg.mid}
+                  message={msg}
+                  currentUserId={userData.authId}
+                  conversationId={activeConversation.docID}
+                  canReport={!isSupportConversation(activeConversation)}
+                  onReported={(updated) => {
+                    if (!updated) return;
+                    setMessages((prev) =>
+                      prev.map((m) =>
+                        (m.mid || m.id) === (updated.mid || updated.id)
+                          ? { ...m, ...updated, reportedByMe: true }
+                          : m
+                      )
+                    );
+                  }}
+                  setSystemMessage={setSystemMessage}
+                />
+              ))
+            ) : (
+              <div className="no-messages-placeholder">
+                <img
+                  src={`${process.env.PUBLIC_URL}/sharepairslogo.png`}
+                  alt=""
+                />
+                <p className="no-messages-lead">No messages yet</p>
+                <p className="no-messages-invite">Start the conversation!</p>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       <div className="message-input-wrapper">
-        <input
-          type="text"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder={t.inputPlaceholder}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSendMessage();
-          }}
-        />
-        <button onClick={handleSendMessage}>{t.send}</button>
+        <div className={`message-composer${maskingComposer ? ' is-masking' : ''}`}>
+          {maskingComposer && (
+            <div className="composer-mirror" aria-hidden="true">
+              <BlurredText text={message} />
+            </div>
+          )}
+          <input
+            ref={composerInputRef}
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={
+              peerMessagingBlocked
+                ? moderationStatusOf(activeConversation) === 'paused'
+                  ? t.pausedSend
+                  : t.terminatedSend
+                : t.inputPlaceholder
+            }
+            disabled={composerDisabled}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSendMessage();
+            }}
+          />
+        </div>
+        <button onClick={handleSendMessage} disabled={composerDisabled}>
+          {t.send}
+        </button>
       </div>
     </div>
   );

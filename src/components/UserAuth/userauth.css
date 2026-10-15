@@ -1,15 +1,101 @@
 select {
-  all: unset;
-  padding: 0.5rem;
+  /* Do not globally unset selects — that breaks registration dropdowns.
+     Scope resets to login-only fields if needed. */
 }
 
 textarea {
-  all: unset;
+  /* Avoid global unset — registration story fields need normal textarea layout. */
 }
 
 h3,
 h5 {
   margin: 0.3rem;
+}
+
+.auth-wrapper {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Pad bottom by the nav height so flex-centering lands in the
+     full viewport middle, not the middle of the area under the header. */
+  padding: 2rem 1rem calc(2rem + var(--app-nav-height, 9rem));
+  box-sizing: border-box;
+}
+
+.env-banner {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 43.2rem;
+  margin-bottom: 0.75rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.02em;
+  box-sizing: border-box;
+}
+
+.env-banner-local {
+  background: #fff6d8;
+  color: #3a3410;
+  border: 1px solid #c9a227;
+}
+
+.env-banner-study {
+  background: #dceeea;
+  color: #0f1f1c;
+  border: 1px solid #31605b;
+}
+
+.local-login-hint {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--text-muted, #243833);
+}
+
+.local-login-hint code {
+  font-size: 0.9em;
+  background: #f0f4f3;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.25rem;
+}
+
+/* Registration uses the full area under the header. The page scrolls. */
+.auth-wrapper:has(.register) {
+  justify-content: flex-start;
+  align-items: stretch;
+  overflow: auto;
+  padding: 0;
+  min-height: 0;
+  background: #31605b;
+}
+
+.auth-wrapper .error-container {
+  width: 100%;
+  max-width: 43.2rem;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 43.2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.auth-container:has(.register) {
+  max-width: none;
+  width: 100%;
+  flex: 1 0 auto;
+  min-height: 0;
+  max-height: none;
+  align-items: stretch;
 }
 
 .auth-wrapper button {
@@ -38,23 +124,34 @@ h5 {
 }
 
 .fields-container {
-  /* width: 100%; */
+  width: 100%;
 }
 
-.fields-container .login {
+.fields-container .login,
+.forgotPassForm {
+  width: 100%;
+  max-width: 43.2rem;
+  min-width: 0;
+  box-sizing: border-box;
   color: black;
   background-color: #ffffff;
-  padding: 3rem 8rem;
-  min-width: 35rem;
-  border-radius: 0.5rem;
-  border: 1rem solid #064d4556;
-  margin-top:2rem;
+  padding: 2.75rem 3rem;
+  border-radius: 0.75rem;
+  border: 0.65rem solid #064d4556;
+  margin: 0 auto;
 }
-.fields-container .login h1{
+
+.fields-container .login h1 {
   font-size: 1.5rem;
-  color: rgba(0, 0, 0, 0.564);
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
 
-
+.fields-container .login .login-hint {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--text-secondary, #333);
 }
 
 .fields-container .login input {
@@ -63,13 +160,12 @@ h5 {
 }
 
 .fields-container .login input::placeholder {
-  color: rgba(0, 0, 0, 0.442);
+  color: var(--text-placeholder);
 }
-
 
 .fields-container form label {
   font-size: 1rem;
-  color: rgba(0, 0, 0, 0.442);
+  color: var(--text-muted);
   padding: 0.5rem;
 }
 
@@ -77,7 +173,7 @@ h5 {
   width: 90%;
   border: none;
   font-size: 1.3rem;
-  color: rgba(0, 0, 0, 0.842);
+  color: var(--text-primary);
 }
 
 .fields-container form [type=date] {
@@ -87,21 +183,37 @@ h5 {
 .fields-container form [type=number] {
   width: unset;
 }
+
 .input-container {
   display: flex;
   flex-direction: row;
   align-items: center;
   margin: 1rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+}
+
+.input-container svg {
+  margin-right: 0.5rem;
+  color: var(--text-muted, #243833);
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .forgotPassForm {
-  background-color: white;
-  margin: 5% auto;
-  padding: 3rem 8rem;
-  border: 1rem solid #064d4556;
-} 
-.forgotPassForm button{
+  margin: 0 auto;
+}
+
+.forgotPassForm button {
   width: 70%;
   background-color: #31605b;
   color: white;
+}
+
+@media (max-width: 480px) {
+  .fields-container .login,
+  .forgotPassForm {
+    padding: 1.75rem 1.25rem;
+    border-width: 0.45rem;
+  }
 }

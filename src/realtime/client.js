@@ -11,11 +11,55 @@ const CONNECTION_STATES = {
   ERROR: 'error',
 };
 
-const DEFAULT_WS_URL = () => {
-  const base = process.env.REACT_APP_WS_URL;
-  if (base) return base.replace(/^http/, 'ws');
+let cachedRuntimeWsUrl = null;
+let runtimeWsUrlPromise = null;
+
+function resolveWsUrlSync(override) {
+  if (override) return override;
+  if (cachedRuntimeWsUrl) return cachedRuntimeWsUrl;
+  const onLocalHost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  const explicit = process.env.REACT_APP_WS_URL;
+  if (explicit) {
+    const url = explicit.replace(/^http/, 'ws');
+    if (/localhost|127\.0\.0\.1/.test(url) && !onLocalHost) {
+      console.warn('[realtime] Ignoring localhost REACT_APP_WS_URL on a non-local host');
+    } else {
+      return url;
+    }
+  }
+  if (onLocalHost) {
+    return `ws://${window.location.hostname}:3001/ws`;
+  }
   return null;
-};
+}
+
+/** Fetch wss URL from API when CRA build has no REACT_APP_WS_URL (CloudShell prebuilt zips). */
+async function resolveWsUrl(override) {
+  const sync = resolveWsUrlSync(override);
+  if (sync) return sync;
+  if (typeof window === 'undefined') return null;
+  if (!runtimeWsUrlPromise) {
+    runtimeWsUrlPromise = (async () => {
+      try {
+        const { resolveApiRoot } = await import('../helpers/apiRoot');
+        const res = await fetch(`${resolveApiRoot()}/api/realtime/config`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const url = data?.wsUrl ? String(data.wsUrl).replace(/^http/, 'ws') : null;
+        if (url) cachedRuntimeWsUrl = url;
+        return url;
+      } catch {
+        return null;
+      }
+    })();
+  }
+  return runtimeWsUrlPromise;
+}
 
 const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 1000;
@@ -36,10 +80,13 @@ let lastSeenByConversationId = {};
 let didReconnectWithFreshToken = false;
 const presenceMap = {}; // userId -> 'online' | 'offline' (for future use)
 
-function getWsUrl() {
-  const url = DEFAULT_WS_URL();
+let urlOverride = null;
+
+async function getWsUrl() {
+  const url = await resolveWsUrl(urlOverride);
   if (!url) return null;
-  return url.startsWith('ws') ? url : `wss://${url}`;
+  if (url.startsWith('ws://') || url.startsWith('wss://')) return url;
+  return `wss://${url}`;
 }
 
 function setConnectionState(next) {
@@ -91,7 +138,7 @@ function scheduleReconnect() {
   retryTimeoutId = setTimeout(() => {
     retryTimeoutId = null;
     retryCount += 1;
-    connect(tokenGetter, { backfill: backfillCallback });
+    connect(tokenGetter, { backfill: backfillCallback, url: urlOverride });
   }, delay);
 }
 
@@ -164,7 +211,7 @@ function handleClose(event) {
     if (!didReconnectWithFreshToken && tokenGetter) {
       didReconnectWithFreshToken = true;
       retryCount = 0;
-      setTimeout(() => connect(tokenGetter, { backfill: backfillCallback }), 500);
+      setTimeout(() => connect(tokenGetter, { backfill: backfillCallback, url: urlOverride }), 500);
       return;
     }
   }
@@ -204,9 +251,11 @@ function handleError() {
  * @param {() => string | Promise<string>} getToken - returns JWT for auth message
  * @param {{ backfill?: (conversationId: string, since: string) => Promise<any> }} options
  */
-export function connect(getToken, options = {}) {
-  const url = getWsUrl();
-  if (!url) {
+export async function connect(getToken, options = {}) {
+  urlOverride = options.url || null;
+  const baseUrl = await getWsUrl();
+  if (!baseUrl) {
+    console.error('[realtime] No WebSocket URL (set REACT_APP_WS_URL or WEBSOCKET_API_ENDPOINT on API).');
     setConnectionState(CONNECTION_STATES.ERROR);
     return;
   }
@@ -218,6 +267,18 @@ export function connect(getToken, options = {}) {
   tokenGetter = getToken;
   backfillCallback = options.backfill || null;
   setConnectionState(CONNECTION_STATES.CONNECTING);
+
+  let url = baseUrl;
+  try {
+    const t = getToken?.();
+    const token = typeof t?.then === 'function' ? await t : t;
+    if (token) {
+      const sep = url.includes('?') ? '&' : '?';
+      url = `${url}${sep}token=${encodeURIComponent(token)}`;
+    }
+  } catch {
+    // connect without token; server may reject
+  }
 
   try {
     const socket = new WebSocket(url);

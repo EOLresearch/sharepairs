@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { useAuth } from "./AuthContext";
 import SystemMessage from '../SystemMessage/SystemMessage';
 import LoginForm from './LoginForm';
 import ForgotPasswordForm from './ForgotPasswordForm';
 import UserDetailsForm from './UserDetailsForm/UserDetailsForm';
 import './userauth.css';
 
-const UserAuth = ({ language, setLanguage }) => {
+const UserAuth = () => {
   const [view, setView] = useState('login');
   const [error, setError] = useState();
   const [info, setInfo] = useState('');
@@ -15,8 +14,6 @@ const UserAuth = ({ language, setLanguage }) => {
     setView(nextView);
     setError('');
   };
-
-  const handleCancelError = () => setError('');
 
   return (
     <div className="auth-wrapper">
@@ -30,7 +27,6 @@ const UserAuth = ({ language, setLanguage }) => {
           <LoginForm
             setError={setError}
             handleToggleView={handleToggleView}
-            language={language}
           />
         )}
 
@@ -38,12 +34,11 @@ const UserAuth = ({ language, setLanguage }) => {
           <ForgotPasswordForm
             setError={setError}
             handleToggleView={handleToggleView}
-            language={language}
           />
         )}
 
         {view === 'register' && (
-          <UserDetailsForm handleToggle={handleToggleView} language={language}/>
+          <UserDetailsForm handleToggle={handleToggleView} />
         )}
       </div>
     </div>

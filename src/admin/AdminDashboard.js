@@ -1,23 +1,24 @@
 import React, { useState, useCallback } from 'react';
-import './admin.css'
+import './admin.css';
 import UsersTab from './users/UsersTab';
 import ConvosTab from './conversations/ConvosTab';
+import PromptsTab from './prompts/PromptsTab';
+import AssessmentsTab from './assessments/AssessmentsTab';
 import SystemMessage from '../components/SystemMessage/SystemMessage';
 
 export default function AdminDashboard({ userData }) {
-  const [activeTab, setActiveTab] = useState('users'); // 'users' | 'conversations'
+  const [activeTab, setActiveTab] = useState('users'); // 'users' | 'conversations' | 'prompts' | 'assessments'
+  const [convoUserFilter, setConvoUserFilter] = useState('');
   const [systemMessage, setSystemMessage] = useState(null);
 
   const isAdmin = !!userData?.admin;
 
-  // ---- messaging helpers (shared across tabs) ----
   const clearMessage = useCallback(() => setSystemMessage(null), []);
 
   const notify = useCallback((message, type = 'info') => {
     setSystemMessage({ message, type });
   }, []);
 
-  // Simple confirm using SystemMessage's action button
   const confirm = useCallback(({ message, onConfirm, actionLabel = 'Confirm' }) => {
     setSystemMessage({
       message,
@@ -33,7 +34,11 @@ export default function AdminDashboard({ userData }) {
     });
   }, [clearMessage]);
 
-  // ---- render gate (don’t conditionally call hooks) ----
+  const viewUserConversations = useCallback((uid) => {
+    setConvoUserFilter(uid || '');
+    setActiveTab('conversations');
+  }, []);
+
   if (!isAdmin) {
     return (
       <div className="admin-dashboard-unauthorized">
@@ -44,7 +49,6 @@ export default function AdminDashboard({ userData }) {
 
   return (
     <div className="admin-dashboard-root">
-      {/* Global banner/dialog for toasts & confirms */}
       {systemMessage && (
         <SystemMessage
           message={systemMessage.message}
@@ -55,38 +59,62 @@ export default function AdminDashboard({ userData }) {
         />
       )}
 
-      {/* Header / Tabs */}
       <div className="admin-dashboard-header">
         <div className="admin-tabs">
           <button
+            type="button"
             className={activeTab === 'users' ? 'tab active' : 'tab'}
             onClick={() => setActiveTab('users')}
           >
-            Users
+            Participants
           </button>
           <button
+            type="button"
             className={activeTab === 'conversations' ? 'tab active' : 'tab'}
             onClick={() => setActiveTab('conversations')}
           >
             Conversations
           </button>
+          <button
+            type="button"
+            className={activeTab === 'prompts' ? 'tab active' : 'tab'}
+            onClick={() => setActiveTab('prompts')}
+          >
+            Prompts
+          </button>
+          <button
+            type="button"
+            className={activeTab === 'assessments' ? 'tab active' : 'tab'}
+            onClick={() => setActiveTab('assessments')}
+          >
+            Assessments
+          </button>
         </div>
       </div>
 
-      {/* Body */}
       <div className="admin-dashboard-body">
-        {activeTab === 'users' ? (
+        {activeTab === 'users' && (
           <UsersTab
             notify={notify}
             confirm={confirm}
             userData={userData}
+            onViewUserConversations={viewUserConversations}
           />
-        ) : (
+        )}
+        {activeTab === 'conversations' && (
           <ConvosTab
             notify={notify}
             confirm={confirm}
             userData={userData}
+            initialSearch={convoUserFilter}
+            onInitialSearchConsumed={() => setConvoUserFilter('')}
           />
+        )}
+        {activeTab === 'prompts' && (
+          <PromptsTab notify={notify} confirm={confirm} userData={userData} />
+        )}
+        {activeTab === 'assessments' && (
+          <AssessmentsTab notify={notify} confirm={confirm} userData={userData} />
         )}
       </div>
     </div>

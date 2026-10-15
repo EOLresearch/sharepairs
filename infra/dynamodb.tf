@@ -87,6 +87,27 @@ resource "aws_dynamodb_table" "messages" {
 }
 
 
+resource "aws_dynamodb_table" "prompts" {
+  name         = "sharepairs-dev-prompts"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = {
+    Name    = "sharepairs-dev-prompts"
+    Purpose = "Admin-editable chat prompt bank"
+    HIPAA   = "Compliant"
+  }
+}
+
 resource "aws_dynamodb_table" "files" {
   name           = "sharepairs-dev-files"
   billing_mode   = "PAY_PER_REQUEST"
@@ -270,6 +291,35 @@ resource "aws_dynamodb_table" "connections" {
   tags = {
     Name    = "sharepairs-dev-connections"
     Purpose = "WebSocket connection registry for realtime push"
+    HIPAA   = "Compliant"
+  }
+}
+
+# ============================================================================
+# Assessments — assignments, responses, REDCap export status
+# ============================================================================
+
+resource "aws_dynamodb_table" "assessments" {
+  name         = "sharepairs-dev-assessments"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "id"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+
+  server_side_encryption {
+    enabled = true
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  tags = {
+    Name    = "sharepairs-dev-assessments"
+    Purpose = "Assessment assignments, responses, and REDCap export status"
     HIPAA   = "Compliant"
   }
 }
