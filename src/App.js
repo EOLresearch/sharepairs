@@ -34,7 +34,7 @@ function App() {
   if (!isVerified) {
     return (
       <AppLayout language={language} setLanguage={setLanguage}>
-        <VerifyEmail />
+        <VerifyEmail language={language} />
       </AppLayout>
     );
   }

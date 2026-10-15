@@ -1,10 +1,12 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, DeleteCommand, QueryCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import * as memory from './memoryDb.js';
 
-// Initialize DynamoDB client
-// AWS_REGION is automatically provided by Lambda runtime
-const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
+const useMemory = process.env.MEMORY_DB === 'true';
+
+// Initialize DynamoDB client (unused when MEMORY_DB=true)
+const client = useMemory ? null : new DynamoDBClient({});
+const docClient = useMemory ? null : DynamoDBDocumentClient.from(client);
 
 // Table names from environment variables
 export const TABLES = {
@@ -22,6 +24,7 @@ export const TABLES = {
  * Get a single item from DynamoDB
  */
 export async function getItem(tableName, key) {
+  if (useMemory) return memory.memoryGetItem(tableName, key);
   const command = new GetCommand({
     TableName: tableName,
     Key: key
@@ -34,6 +37,7 @@ export async function getItem(tableName, key) {
  * Put an item into DynamoDB
  */
 export async function putItem(tableName, item) {
+  if (useMemory) return memory.memoryPutItem(tableName, item);
   const command = new PutCommand({
     TableName: tableName,
     Item: item
@@ -45,27 +49,39 @@ export async function putItem(tableName, item) {
 /**
  * Update an item in DynamoDB (replace attributes by key).
  * updates: plain object of attribute names to values.
+ * Pass `null` to REMOVE an attribute.
  */
 export async function updateItem(tableName, key, updates) {
+  if (useMemory) return memory.memoryUpdateItem(tableName, key, updates);
   const names = {};
   const values = {};
   const setParts = [];
+  const removeParts = [];
   let i = 0;
   for (const [k, v] of Object.entries(updates)) {
     const n = `#a${i}`;
-    const vn = `:v${i}`;
     names[n] = k;
-    values[vn] = v;
-    setParts.push(`${n} = ${vn}`);
+    if (v === null || v === undefined) {
+      removeParts.push(n);
+    } else {
+      const vn = `:v${i}`;
+      values[vn] = v;
+      setParts.push(`${n} = ${vn}`);
+    }
     i++;
   }
-  if (setParts.length === 0) return (await getItem(tableName, key)) || null;
+  if (setParts.length === 0 && removeParts.length === 0) {
+    return (await getItem(tableName, key)) || null;
+  }
+  const expr = [];
+  if (setParts.length) expr.push('SET ' + setParts.join(', '));
+  if (removeParts.length) expr.push('REMOVE ' + removeParts.join(', '));
   const command = new UpdateCommand({
     TableName: tableName,
     Key: key,
-    UpdateExpression: 'SET ' + setParts.join(', '),
+    UpdateExpression: expr.join(' '),
     ExpressionAttributeNames: names,
-    ExpressionAttributeValues: values,
+    ...(Object.keys(values).length ? { ExpressionAttributeValues: values } : {}),
     ReturnValues: 'ALL_NEW',
   });
   const response = await docClient.send(command);
@@ -76,6 +92,7 @@ export async function updateItem(tableName, key, updates) {
  * Delete an item from DynamoDB
  */
 export async function deleteItem(tableName, key) {
+  if (useMemory) return memory.memoryDeleteItem(tableName, key);
   const command = new DeleteCommand({
     TableName: tableName,
     Key: key
@@ -87,6 +104,7 @@ export async function deleteItem(tableName, key) {
  * Query DynamoDB table
  */
 export async function query(tableName, params) {
+  if (useMemory) return memory.memoryQuery(tableName, params);
   const command = new QueryCommand({
     TableName: tableName,
     ...params
@@ -99,6 +117,7 @@ export async function query(tableName, params) {
  * Scan DynamoDB table
  */
 export async function scan(tableName, params = {}) {
+  if (useMemory) return memory.memoryScan(tableName, params);
   const command = new ScanCommand({
     TableName: tableName,
     ...params
@@ -106,4 +125,3 @@ export async function scan(tableName, params = {}) {
   const response = await docClient.send(command);
   return response.Items || [];
 }
-

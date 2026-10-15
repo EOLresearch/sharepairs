@@ -25,6 +25,18 @@ const en = {
     error_invalid_credentials: "Invalid email or password.",
     error_generic: "Login failed. Please try again."
   },
+  verify: {
+    title: "Verify your email",
+    sent_prefix: "We sent a verification code to",
+    instructions: "Enter the 6-digit code from your email. After verifying you can use the app.",
+    code_placeholder: "6-digit code",
+    verify_button: "Verify",
+    verifying: "Verifying...",
+    resend_button: "Resend code",
+    sign_out: "Sign out",
+    error_generic: "Verification failed. Check the code and try again.",
+    error_resend: "Could not resend the code. Please try again."
+  },
   forgot: {
     instructions: "Please submit the email address associated with your account",
     placeholder_email: "Email",
@@ -72,6 +84,7 @@ const en = {
       missing_email: "Missing email address.",
       missing_password: "Password is required.",
       password_mismatch: "Passwords do not match.",
+      weak_password: "Password must be at least 8 characters and include uppercase, lowercase, a number, and a symbol.",
       missing_residence: "Home state is required.",
       missing_birthdate: "Birth date is required.",
       must_be_18: "You must be at least 18 years old to register.",

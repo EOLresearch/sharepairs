@@ -59,6 +59,7 @@ Create an HTTP API (API Gateway v2):
 1. Create API → HTTP API → Next.
 2. Add integration: Lambda, select your `sharepairs-api` Lambda.
 3. Add routes:
+   - `POST /api/auth/register` → Lambda
    - `POST /api/auth/login` → Lambda
    - `GET /api/auth/me` → Lambda
    - `PATCH /api/auth/me` → Lambda
@@ -109,7 +110,10 @@ With `STUB_AUTH=true`:
 
 | Method | Path                    | Handler              |
 |--------|-------------------------|----------------------|
+| POST   | /api/auth/register     | auth.register        |
 | POST   | /api/auth/login        | auth.login           |
+| POST   | /api/auth/verify-email | auth.verifyEmail     |
+| POST   | /api/auth/resend-verification | auth.resendVerification |
 | GET    | /api/auth/me           | auth.me              |
 | PATCH  | /api/auth/me           | auth.mePatch         |
 | GET    | /api/matches           | matches.getMatches   |
@@ -123,7 +127,8 @@ With `STUB_AUTH=true`:
 
 ## What is still stubbed
 
-- **Cognito**: Login in production returns 501; integrate InitiateAuth + JWT verification.
-- **Register / reset-password / resend-verification**: Not implemented; add Lambdas or routes that call Cognito (SignUp, ForgotPassword, etc.).
+- **Cognito**: Login/register/verify in production return 501 when `STUB_AUTH` is off; integrate SignUp / ConfirmSignUp / InitiateAuth + JWT verification.
+- **Reset-password**: Not implemented; add routes that call Cognito ForgotPassword / ConfirmForgotPassword.
+- **Email delivery**: Verification codes log to CloudWatch unless `SES_FROM_EMAIL` is set (then SES SendEmail).
 - **Admin endpoints**: `/api/admin/users`, `/api/admin/conversations`, `/api/admin/matches`, `/api/admin/chat/*`, `/api/distress` are not in this router; add when needed.
 - **Support conversation**: GET/POST `/api/conversations/support` not implemented; frontend can use existing POST `/api/conversations` with support UID.

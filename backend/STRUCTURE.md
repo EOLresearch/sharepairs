@@ -10,7 +10,7 @@ backend/
 │   ├── cors.js            # CORS headers + preflight
 │   ├── response.js        # success() / error() with CORS
 │   ├── auth.js            # authenticateUser(event) — Bearer or cookie, Cognito or stub
-│   ├── stubAuth.js        # Stub login (findUserByEmail, signStubToken, verifyStubToken)
+│   ├── stubAuth.js        # Stub login/register (findUserByEmail, tokens)
 │   ├── database.js        # getItem, putItem, updateItem, query, scan, TABLES
 │   ├── validation.js      # Joi schemas (existing)
 │   └── audit.js           # Audit logging (existing)
@@ -19,7 +19,7 @@ backend/
 │   │   ├── index.js       # Lambda entry: handler = route
 │   │   ├── router.js      # Routes by method + path, dispatches to handlers
 │   │   └── handlers/
-│   │       ├── auth.js    # login, me, mePatch
+│   │       ├── auth.js    # register, login, me, mePatch
 │   │       ├── matches.js # getMatches
 │   │       ├── messages.js# getMessages, sendMessage, markSeen
 │   │       ├── consent.js # consentRequest, consentRespond
@@ -36,7 +36,10 @@ backend/
 | Method | Path                    | Handler                      |
 |--------|-------------------------|------------------------------|
 | OPTIONS| *                       | corsPreflight()              |
+| POST   | /api/auth/register      | auth.register                |
 | POST   | /api/auth/login         | auth.login                   |
+| POST   | /api/auth/verify-email  | auth.verifyEmail             |
+| POST   | /api/auth/resend-verification | auth.resendVerification |
 | GET    | /api/auth/me            | auth.me                      |
 | PATCH  | /api/auth/me            | auth.mePatch                 |
 | GET    | /api/matches            | matches.getMatches           |

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import * as authService from '../../services/authService';
+import { setTokenGetter } from '../../api/client';
 import SystemMessage from '../SystemMessage/SystemMessage';
 
 const AuthContext = createContext();
@@ -12,6 +13,10 @@ export const AuthProvider = ({ children }) => {
   const [authLoading, setAuthLoading] = useState(true);
   const [systemMessage, setSystemMessage] = useState(null);
   const pollRef = useRef(null);
+
+  useEffect(() => {
+    setTokenGetter(() => authService.getStoredToken());
+  }, []);
 
   const refreshAuth = async () => {
     try {
@@ -67,13 +72,16 @@ export const AuthProvider = ({ children }) => {
 
   const registerAndStoreUser = async (email, password, userDetails) => {
     try {
-      await authService.register(email, password, userDetails, false);
+      const result = await authService.register(email, password, userDetails, false);
+      const needsConfirmation = result?.needsConfirmation === true;
       setSystemMessage({
-        message: 'Verification email sent. Please check your inbox.',
+        message: needsConfirmation
+          ? 'Verification email sent. Please check your inbox.'
+          : 'Account created. You can log in now.',
         type: 'success',
       });
       await logout();
-      return { success: true };
+      return { success: true, needsConfirmation };
     } catch (err) {
       setSystemMessage({
         message: 'Registration error: ' + (err?.message || String(err)),
@@ -92,7 +100,14 @@ export const AuthProvider = ({ children }) => {
         message: 'Resend failed: ' + (err?.message || String(err)),
         type: 'error',
       });
+      throw err;
     }
+  };
+
+  const verifyEmail = async (code) => {
+    await authService.verifyEmail(code);
+    setSystemMessage({ message: 'Email verified. Welcome!', type: 'success' });
+    await refreshAuth();
   };
 
   const resetAuthContext = () => {
@@ -111,6 +126,7 @@ export const AuthProvider = ({ children }) => {
         resetPassword,
         registerAndStoreUser,
         resendVerificationEmail,
+        verifyEmail,
         resetAuthContext,
       }}
     >

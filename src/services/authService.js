@@ -1,15 +1,45 @@
 /**
  * Auth service — all auth operations via REST.
- * Endpoints: /api/auth/login, /api/auth/logout, /api/auth/me, /api/auth/register, /api/auth/reset-password
+ * Uses REACT_APP_API_URL when set (API Gateway); otherwise same-origin /api.
+ * Stores the stub/JWT token in sessionStorage and sends Authorization: Bearer.
  */
 
-const AUTH_BASE = '/api/auth';
+const API_ROOT = (process.env.REACT_APP_API_URL || '').replace(/\/$/, '');
+const AUTH_BASE = `${API_ROOT}/api/auth`;
+const TOKEN_KEY = 'authToken';
+
+export function getStoredToken() {
+  try {
+    return sessionStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredToken(token) {
+  try {
+    if (token) sessionStorage.setItem(TOKEN_KEY, token);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function authHeaders(extra = {}) {
+  const headers = { ...extra };
+  const token = getStoredToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
 
 async function handleResponse(res) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = new Error(data?.message || data?.error || `HTTP ${res.status}`);
-    err.code = data?.code;
+    err.code = data?.code || data?.details?.code;
+    if (!err.code && typeof data?.error === 'string' && data.error.startsWith('auth/')) {
+      err.code = data.error;
+    }
     throw err;
   }
   return data;
@@ -26,38 +56,62 @@ export async function login(email, password) {
     body: JSON.stringify({ email, password }),
     credentials: 'include',
   });
-  return handleResponse(res);
+  const data = await handleResponse(res);
+  if (data?.token) setStoredToken(data.token);
+  return data;
 }
 
 /**
- * Logout (clear session on server and/or client).
+ * Logout (clear session on server and client).
  */
 export async function logout() {
-  const res = await fetch(`${AUTH_BASE}/logout`, {
-    method: 'POST',
+  try {
+    const res = await fetch(`${AUTH_BASE}/logout`, {
+      method: 'POST',
+      headers: authHeaders(),
+      credentials: 'include',
+    });
+    if (!(res.ok || res.status === 404)) await handleResponse(res);
+  } finally {
+    setStoredToken(null);
+  }
+}
+
+/**
+ * Get session token for WebSocket authentication.
+ */
+export async function getWsToken() {
+  const stored = getStoredToken();
+  if (stored) return { token: stored };
+  const res = await fetch(`${AUTH_BASE}/ws-token`, {
+    method: 'GET',
+    headers: authHeaders(),
     credentials: 'include',
   });
-  if (res.ok || res.status === 404) return;
+  if (res.status === 401) throw new Error('Not authenticated');
   return handleResponse(res);
 }
 
 /**
  * Get current authenticated user and profile.
- * Returns { user: { uid, email, emailVerified, ... }, userData: { authId, displayName, ... } } or null.
  */
 export async function getCurrentUser() {
+  if (!getStoredToken()) return null;
   const res = await fetch(`${AUTH_BASE}/me`, {
     method: 'GET',
+    headers: authHeaders(),
     credentials: 'include',
   });
-  if (res.status === 401) return null;
+  if (res.status === 401) {
+    setStoredToken(null);
+    return null;
+  }
   const data = await handleResponse(res);
   return data?.user ? data : null;
 }
 
 /**
  * Register new user. Creates auth user and profile.
- * Returns { success, user } or throws.
  */
 export async function register(email, password, userDetails = {}, isAdmin = false) {
   const res = await fetch(`${AUTH_BASE}/register`, {
@@ -82,11 +136,26 @@ export async function resetPassword(email) {
 }
 
 /**
- * Resend verification email for current user.
+ * Resend verification email for current user (or email in body).
  */
-export async function resendVerificationEmail() {
+export async function resendVerificationEmail(email) {
   const res = await fetch(`${AUTH_BASE}/resend-verification`, {
     method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(email ? { email } : {}),
+    credentials: 'include',
+  });
+  return handleResponse(res);
+}
+
+/**
+ * Confirm email with a 6-digit verification code.
+ */
+export async function verifyEmail(code, email) {
+  const res = await fetch(`${AUTH_BASE}/verify-email`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ code, ...(email ? { email } : {}) }),
     credentials: 'include',
   });
   return handleResponse(res);
@@ -98,7 +167,7 @@ export async function resendVerificationEmail() {
 export async function updateUserProfile(uid, patch) {
   const res = await fetch(`${AUTH_BASE}/me`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(patch),
     credentials: 'include',
   });
@@ -112,7 +181,7 @@ export async function addContactIfNotExists(userUid, contactObj) {
   if (!userUid || !contactObj?.uid) return;
   const res = await fetch(`${AUTH_BASE}/contacts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({ contact: contactObj }),
     credentials: 'include',
   });

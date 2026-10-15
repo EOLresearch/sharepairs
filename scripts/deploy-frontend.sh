@@ -26,6 +26,10 @@ if [ "$SKIP_BUILD" = false ]; then
     export REACT_APP_WS_URL="${WEBSOCKET_API_ENDPOINT/https:\/\//wss://}"
     echo "    REACT_APP_WS_URL=$REACT_APP_WS_URL"
   fi
+  if [ -n "${API_GATEWAY_ENDPOINT:-}" ]; then
+    export REACT_APP_API_URL="${API_GATEWAY_ENDPOINT%/}/${API_GATEWAY_STAGE}"
+    echo "    REACT_APP_API_URL=$REACT_APP_API_URL"
+  fi
   # CloudShell sets CI=true, which makes CRA treat ESLint warnings as errors.
   CI=false npm run build
 else

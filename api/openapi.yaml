@@ -134,6 +134,73 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /auth/verify-email:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm email with verification code
+      description: Marks the user's email as verified using the 6-digit code
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  pattern: '^[0-9]{6}$'
+                email:
+                  type: string
+                  format: email
+                  description: Required when not authenticated
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    type: object
+                  userData:
+                    type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/resend-verification:
+    post:
+      tags:
+        - Authentication
+      summary: Resend email verification code
+      description: Issues a new verification code to the user (session or email body)
+      operationId: resendVerification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Code sent (or already verified)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
   /auth/forgot-password:
     post:
       tags:
@@ -826,6 +893,7 @@ components:
         - email
         - password
         - displayName
+        - birthDate
       properties:
         email:
           type: string
@@ -836,7 +904,7 @@ components:
           description: Must contain uppercase, lowercase, number, and symbol
         displayName:
           type: string
-          minLength: 2
+          minLength: 1
           maxLength: 100
         preferredLanguage:
           type: string
@@ -845,17 +913,63 @@ components:
         timezone:
           type: string
           default: UTC
+        photoURL:
+          type: string
+          format: uri
+        country:
+          type: string
+        residence:
+          type: string
+        birthDate:
+          type: string
+          description: ISO date; registrant must be 18+
+        race:
+          type: string
+        ethnicity:
+          type: string
+        bioSex:
+          type: string
+        education:
+          type: string
+        household:
+          type: string
+        hobbies:
+          type: string
+        lossDate:
+          type: string
+        kinship:
+          type: string
+        cause:
+          type: string
+        deceasedAge:
+          type: string
+        lossExp:
+          type: string
+        consent:
+          type: boolean
+          description: IRB / study consent at signup
 
     RegisterResponse:
       type: object
       properties:
         userSub:
           type: string
-          description: Cognito user ID
+          description: Cognito user ID or stub user id
         needsConfirmation:
           type: boolean
           description: Whether email confirmation is required
-
+        user:
+          type: object
+          properties:
+            uid:
+              type: string
+            email:
+              type: string
+            emailVerified:
+              type: boolean
+        userData:
+          type: object
+          description: App profile fields (displayName, demographics, etc.)
     LoginRequest:
       type: object
       required:

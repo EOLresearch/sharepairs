@@ -29,7 +29,11 @@ function getMethod(event) {
 
 const routes = [
   { method: 'OPTIONS', path: '/api', handler: () => corsPreflight() },
+  { method: 'POST', path: '/api/auth/register', handler: authHandlers.register },
   { method: 'POST', path: '/api/auth/login', handler: authHandlers.login },
+  { method: 'POST', path: '/api/auth/logout', handler: authHandlers.logout },
+  { method: 'POST', path: '/api/auth/verify-email', handler: authHandlers.verifyEmail },
+  { method: 'POST', path: '/api/auth/resend-verification', handler: authHandlers.resendVerification },
   { method: 'GET', path: '/api/auth/me', handler: authHandlers.me },
   { method: 'PATCH', path: '/api/auth/me', handler: authHandlers.mePatch },
   { method: 'GET', path: '/api/matches', handler: matchesHandlers.getMatches },

@@ -22,6 +22,7 @@ done
 echo "============================================"
 echo " Share Pairs — CloudShell deploy"
 echo " Region: ${AWS_REGION:-us-east-1}"
+echo " Study URL: https://d63lgf5y8mx7j.cloudfront.net/"
 echo "============================================"
 
 # shellcheck source=aws-env.sh
@@ -35,11 +36,15 @@ echo ""
 
 chmod +x "$ROOT/scripts/"*.sh
 
-echo "==> Step 1/3: Wire API Gateway -> Lambda"
+echo "==> Step 1/4: Deploy API Lambda (register/login/logout)"
+"$ROOT/scripts/deploy-api-lambda.sh"
+
+echo ""
+echo "==> Step 2/4: Wire API Gateway -> Lambda"
 "$ROOT/scripts/wire-api.sh"
 
 echo ""
-echo "==> Step 2/3: Wire CloudFront /api/* -> API Gateway"
+echo "==> Step 3/4: Wire CloudFront /api/* -> API Gateway"
 "$ROOT/scripts/wire-cloudfront-api.sh"
 
 if [ "$WIRE_ONLY" = true ]; then
@@ -50,7 +55,7 @@ if [ "$WIRE_ONLY" = true ]; then
 fi
 
 echo ""
-echo "==> Step 3/3: Build + publish frontend"
+echo "==> Step 4/4: Build + publish frontend"
 if [ "$SKIP_BUILD" = true ]; then
   "$ROOT/scripts/deploy-frontend.sh" --skip-build
 else

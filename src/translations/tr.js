@@ -25,6 +25,18 @@ const tr = {
     error_invalid_credentials: "Geçersiz e-posta veya şifre.",
     error_generic: "Giriş başarısız. Lütfen tekrar deneyin."
   },
+  verify: {
+    title: "E-postanızı doğrulayın",
+    sent_prefix: "Doğrulama kodunu şu adrese gönderdik:",
+    instructions: "E-postanızdaki 6 haneli kodu girin. Doğruladıktan sonra uygulamayı kullanabilirsiniz.",
+    code_placeholder: "6 haneli kod",
+    verify_button: "Doğrula",
+    verifying: "Doğrulanıyor...",
+    resend_button: "Kodu yeniden gönder",
+    sign_out: "Çıkış yap",
+    error_generic: "Doğrulama başarısız. Kodu kontrol edip tekrar deneyin.",
+    error_resend: "Kod yeniden gönderilemedi. Lütfen tekrar deneyin."
+  },
   forgot: {
     instructions: "Lütfen hesabınıza bağlı e-posta adresini girin",
     placeholder_email: "E-posta",
@@ -72,6 +84,7 @@ const tr = {
       missing_email: "E-posta adresi eksik.",
       missing_password: "Şifre gerekli.",
       password_mismatch: "Şifreler uyuşmuyor.",
+      weak_password: "Şifre en az 8 karakter olmalı; büyük harf, küçük harf, rakam ve özel karakter içermelidir.",
       missing_residence: "İkamet edilen eyalet gerekli.",
       missing_birthdate: "Doğum tarihi gerekli.",
       must_be_18: "Kayıt olmak için en az 18 yaşında olmalısınız.",

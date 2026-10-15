@@ -11,8 +11,11 @@ export function success(data, statusCode = 200) {
 }
 
 export function error(message, statusCode = 400, details = null) {
-  const body = { error: message };
-  if (details) body.details = details;
+  const body = { error: message, message };
+  if (details) {
+    body.details = details;
+    if (details.code) body.code = details.code;
+  }
   return withCors({
     statusCode,
     body: JSON.stringify(body),

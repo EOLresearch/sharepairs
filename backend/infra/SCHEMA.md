@@ -11,7 +11,28 @@ Table names are env-driven: `USERS_TABLE`, `CONVERSATIONS_TABLE`, `MESSAGES_TABL
 | password       | String |       | Stub auth only; omit in prod   |
 | password_hash  | String |       | Stub auth hashed password      |
 | display_name   | String |       |                                |
-| is_admin       | Boolean|       |                                |
+| photo_url      | String |       | Avatar URL                     |
+| preferred_language | String |   | `en` or `tr`                   |
+| timezone       | String |       |                                |
+| is_admin       | Boolean|       | Never set via public register  |
+| email_verified | Boolean|       | Explicit false until confirmed; missing = verified (legacy seeds) |
+| email_verification_hash | String | | HMAC of pending 6-digit code (stub) |
+| email_verification_expires | Number | | Unix ms; code TTL 15 minutes |
+| study_consent  | Boolean|       | IRB consent at signup          |
+| country        | String |       | Study demographics             |
+| residence      | String |       | State / province               |
+| birth_date     | String |       | ISO date; must be 18+          |
+| race           | String |       |                                |
+| ethnicity      | String |       |                                |
+| bio_sex        | String |       |                                |
+| education      | String |       |                                |
+| household      | String |       |                                |
+| hobbies        | String |       |                                |
+| loss_date      | String |       |                                |
+| kinship        | String |       |                                |
+| cause          | String |       |                                |
+| deceased_age   | String |       |                                |
+| loss_exp       | String |       | Loss experience narrative      |
 | simpatico_match| Map/S  |       | Match uid or embedded object   |
 | contacts       | List   |       | Array of contact objects       |
 | chat_disabled  | Boolean|       |                                |

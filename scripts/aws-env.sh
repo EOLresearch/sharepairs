@@ -7,8 +7,11 @@
 #   export FRONTEND_BUCKET=my-bucket
 
 : "${AWS_REGION:=us-east-1}"
+# Study / participant stack — do not deploy elsewhere.
 : "${AWS_ACCOUNT_ID:=562395967936}"
 : "${PROJECT_PREFIX:=sharepairs-dev}"
+# Canonical participant CloudFront URL (account 562395967936)
+: "${STUDY_CLOUDFRONT_DOMAIN:=d63lgf5y8mx7j.cloudfront.net}"
 
 export AWS_REGION AWS_DEFAULT_REGION="$AWS_REGION"
 
@@ -53,27 +56,35 @@ _discover_bucket() {
 }
 
 _discover_cloudfront() {
-  # Bucket is account-prefixed: sharepairs-dev-<account>-frontend
-  # so do not require the literal substring "sharepairs-dev-frontend".
+  # Prefer the canonical study domain when present in this account.
   aws cloudfront list-distributions \
     --output json 2>/dev/null | python3 -c "
 import json, sys
 prefix = '${PROJECT_PREFIX}'
+study = '${STUDY_CLOUDFRONT_DOMAIN}'
 try:
   data = json.load(sys.stdin)
   items = (data.get('DistributionList') or {}).get('Items') or []
+  chosen = None
   for d in items:
-    origins = ((d.get('Origins') or {}).get('Items')) or []
-    origin_hit = any(
-      prefix in (o.get('DomainName') or '') and 'frontend' in (o.get('DomainName') or '')
-      for o in origins
-    )
-    comment = (d.get('Comment') or '').lower()
-    comment_hit = 'share' in comment or 'sharepairs' in comment
-    if origin_hit or comment_hit:
-      print(d['Id'])
-      print(d['DomainName'])
+    if d.get('DomainName') == study:
+      chosen = d
       break
+  if not chosen:
+    for d in items:
+      origins = ((d.get('Origins') or {}).get('Items')) or []
+      origin_hit = any(
+        prefix in (o.get('DomainName') or '') and 'frontend' in (o.get('DomainName') or '')
+        for o in origins
+      )
+      comment = (d.get('Comment') or '').lower()
+      comment_hit = 'share' in comment or 'sharepairs' in comment
+      if origin_hit or comment_hit:
+        chosen = d
+        break
+  if chosen:
+    print(chosen['Id'])
+    print(chosen['DomainName'])
 except Exception:
   pass
 " 2>/dev/null
@@ -95,9 +106,18 @@ _verify_account() {
     exit 1
   fi
   if [ "$current" != "$AWS_ACCOUNT_ID" ]; then
-    echo "WARNING: Active account is $current (expected $AWS_ACCOUNT_ID)." >&2
-    echo "         Continuing with account $current. Set AWS_ACCOUNT_ID to override." >&2
-    AWS_ACCOUNT_ID="$current"
+    echo "ERROR: Wrong AWS account." >&2
+    echo "  Active:   $current  ($(aws sts get-caller-identity --query Arn --output text 2>/dev/null || echo unknown))" >&2
+    echo "  Required: $AWS_ACCOUNT_ID  (study stack → https://${STUDY_CLOUDFRONT_DOMAIN}/)" >&2
+    echo "" >&2
+    echo "Your CLI default profile is not the radiology study account." >&2
+    echo "Log the CLI into account $AWS_ACCOUNT_ID (same account as the AWS console" >&2
+    echo "role radiology-admin-role), then re-run the deploy script." >&2
+    echo "" >&2
+    echo "Examples:" >&2
+    echo "  aws sso login --profile <your-radiology-profile>" >&2
+    echo "  export AWS_PROFILE=<your-radiology-profile>" >&2
+    exit 1
   fi
 }
 
@@ -139,7 +159,14 @@ fi
 export API_GATEWAY_ID API_GATEWAY_ENDPOINT
 export CLOUDFRONT_DISTRIBUTION_ID CLOUDFRONT_DOMAIN FRONTEND_BUCKET
 export API_LAMBDA_NAME API_GATEWAY_STAGE AWS_ACCOUNT_ID PROJECT_PREFIX
-export USER_UPLOADS_BUCKET WEBSOCKET_API_ENDPOINT
+export USER_UPLOADS_BUCKET WEBSOCKET_API_ENDPOINT STUDY_CLOUDFRONT_DOMAIN
+
+if [ -n "$CLOUDFRONT_DOMAIN" ] && [ "$CLOUDFRONT_DOMAIN" != "$STUDY_CLOUDFRONT_DOMAIN" ]; then
+  echo "ERROR: CloudFront domain is $CLOUDFRONT_DOMAIN" >&2
+  echo "       Study URL must be https://${STUDY_CLOUDFRONT_DOMAIN}/" >&2
+  echo "       Refusing to deploy to the wrong distribution." >&2
+  exit 1
+fi
 
 # Fail fast with a helpful message if core resources are missing.
 _missing=()

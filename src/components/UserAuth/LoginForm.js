@@ -5,7 +5,7 @@ import en from '../../translations/en';
 import tr from '../../translations/tr';
 
 const LoginForm = ({ setError, handleToggleView, language }) => {
-  const { login, logout } = useAuth();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,13 +22,8 @@ const LoginForm = ({ setError, handleToggleView, language }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const userCred = await login(email, password);
-      if (!userCred.user.emailVerified) {
-        await logout();
-        setError(t.auth.error_unverified);
-        setLoading(false);
-        return;
-      }
+      // Unverified users stay signed in; App gates them to VerifyEmail
+      await login(email, password);
     } catch (err) {
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
         setError(t.auth.error_invalid_credentials);

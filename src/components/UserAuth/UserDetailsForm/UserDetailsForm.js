@@ -80,6 +80,10 @@ const UserDetailsForm = ({ handleToggle, language }) => {
       { condition: !userDetails.email.trim(), error: t.register.errors.missing_email },
       { condition: !userDetails.password, error: t.register.errors.missing_password },
       { condition: userDetails.password !== userDetails.confirmPass, error: t.register.errors.password_mismatch },
+      {
+        condition: !/^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}$/.test(userDetails.password || ''),
+        error: t.register.errors.weak_password,
+      },
       { condition: !userDetails.residence, error: t.register.errors.missing_residence },
       { condition: !userDetails.birthDate, error: t.register.errors.missing_birthdate },
       { condition: !over18Bouncer(userDetails.birthDate), error: t.register.errors.must_be_18 },
